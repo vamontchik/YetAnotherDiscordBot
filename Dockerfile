@@ -10,7 +10,7 @@ RUN dotnet restore
 
 # Copy local code to the container image.
 # cd into the app/ dir
-COPY Program.cs ./
+COPY src/* ./
 WORKDIR /app
 
 # Build a release artifact.

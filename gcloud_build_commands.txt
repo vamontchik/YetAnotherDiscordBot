@@ -1,5 +1,9 @@
 ﻿# builds it and send it to google's container registry
 gcloud builds submit --tag gcr.io/aserverinstance/discordbotbuild
 
-# below kinda doesn't work... need 8080 port open and discord bot's done really wanna ^^
-gcloud run deploy --image gcr.io/aserverinstance/discordbotbuild
+# need 8080 port open and currently, this application doesn't do that.
+# SO, just make a new compute instance and start it with the 
+# latest docker image from the container registry
+# BELOW, does not work until the container actually listens and
+# responds to http on 8080
+###gcloud run deploy --image gcr.io/aserverinstance/discordbotbuild

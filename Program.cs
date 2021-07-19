@@ -9,13 +9,20 @@ namespace DiscordBot
     class Program
     {
         private DiscordSocketClient _client;
+        private string _adminID;
 
         public static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
         public async Task MainAsync()
-        { 
-            // for local runs: C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt
-            var token = File.ReadAllText("token.txt");
+        {
+            // for local runs:
+            // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt"
+            // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt"
+            // for docker builds:
+            // "token.txt"
+            // "id.txt"
+            var token = File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt");
+            _adminID = File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt");
 
             var config = new DiscordSocketConfig { MessageCacheSize = 100 };
             _client = new DiscordSocketClient(config);
@@ -26,38 +33,22 @@ namespace DiscordBot
             await _client.StartAsync();
 
             _client.MessageReceived += OnMessageReceived;
-            _client.MessageUpdated += OnMessageUpdatedAsync;
             
             await Task.Delay(-1);
         }
 
-        private async Task OnMessageUpdatedAsync(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
-        {   
-            // NOTE: If the message was not in the cache,
-            //       downloading it will result in getting a copy of `after`.
-            var msg = await before.GetOrDownloadAsync();
-
-            var afterTimestamp = after.Timestamp;
-            var author = msg.Author;
-            var msgChannel = msg.Channel;
-            var beforeContent = msg.Content;
-            var afterContent = after.Content;
-
-            Console.WriteLine($"[{afterTimestamp}]\tAuthor: {author}\tChannel: {msgChannel}");
-            Console.WriteLine($"{beforeContent} -> {afterContent}");
-        }
-
-        private Task OnMessageReceived(SocketMessage arg)
+        private Task OnMessageReceived(SocketMessage socketMessage)
         {
-            var author = arg.Author;
-            var channel = arg.Channel;
-            var content = arg.Content;
-            var timestamp = arg.Timestamp;
-            
-            Console.WriteLine($"[{timestamp}]\tAuthor: {author}\tChannel: {channel}");
-            Console.WriteLine($"{content}");
-
-            // DO THE THING :D
+            var userID = socketMessage.Author.Id;
+            if (userID.ToString() == _adminID)
+            {
+                // "authenticated"
+                Console.WriteLine($"Admin: {socketMessage.Content}");
+            }
+            else
+            {
+                Console.WriteLine($"Non-admin: {socketMessage.Content}");
+            }
 
             return Task.CompletedTask;
         }

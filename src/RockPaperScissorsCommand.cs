@@ -1,6 +1,7 @@
 ﻿using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DiscordBot.src
 {
@@ -57,34 +58,35 @@ namespace DiscordBot.src
             _destChannel = messageChannel;
         }
 
-        public void Execute()
+        public async Task ExecuteAsync()
         {
-            if (!ValidUserChoice(_userChoice))
-            {
-                SendErrorMessage();
-                return;
-            }
+            if (!ValidUserChoice())
+                await SendErrorMessageAsync();
+            else
+                await SendGameMessage();
+        }
 
+        private bool ValidUserChoice()
+        {
+            return _strChoices.ContainsKey(_userChoice.ToLower());
+        }
+
+        private async Task SendErrorMessageAsync()
+        {
+            await _destChannel.SendMessageAsync("That's not a rock, paper, or scissors!");
+        }
+
+        private async Task SendGameMessage()
+        {
             var botChoice = _rnd.Next(Enum.GetNames(typeof(RPSType)).Length);
             var botChoiceAsType = _choices[botChoice];
             var userChoiceAsType = _strChoices[_userChoice];
             var winner = GetWinner(userChoiceAsType, botChoiceAsType);
 
-            // BLOCK >:D
-            _destChannel.SendMessageAsync($"User: {userChoiceAsType}, Bot: {botChoiceAsType}, Winner: {winner}").Wait();
+            await _destChannel.SendMessageAsync($"User: {userChoiceAsType}, Bot: {botChoiceAsType}, Winner: {winner}");
         }
 
-        private bool ValidUserChoice(string userChoice)
-        {
-            return _strChoices.ContainsKey(_userChoice.ToLower());
-        }
-
-        private void SendErrorMessage()
-        {
-            _destChannel.SendMessageAsync($"That's not a rock, paper, or scissors!").Wait();
-        }
-
-        private string GetWinner(RPSType first, RPSType second)
+        private static string GetWinner(RPSType first, RPSType second)
         {
             var compare = first.Compare(second);
 

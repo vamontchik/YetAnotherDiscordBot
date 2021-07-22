@@ -8,46 +8,53 @@ namespace DiscordBot
 {
     class Program
     {
-        private DiscordSocketClient _client;
-        private MessageProcessor _messageProcessor;
-        private string _adminID;
-        private string _token;
-        private readonly int MESSAGE_CACHE_SIZE = 100;
+        private readonly DiscordSocketClient _client;
+        private readonly MessageProcessor _messageProcessor;
+        private readonly string _adminID;
+        private readonly string _token;
+        private const int MESSAGE_CACHE_SIZE = 100;
 
-        public static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
+        public static void Main() => new Program().StartupAsync().Wait();
 
-        private async Task MainAsync()
+        private Program()
         {
-            ReadAuthFiles();
-            CreateMessageProcessor();
-            CreateDiscordSocketClient();
+            _token = ReadTokenFile();
+            _adminID = ReadAdminIDFile();
+            _messageProcessor = CreateMessageProcessor();
+            _client = CreateDiscordSocketClient();
             SubscribeEventHandlers();
-            await LoginAsync();
-            await WaitForeverAsync();
         }
-        
-        private void ReadAuthFiles()
+
+        private string ReadTokenFile()
         {
             // for local runs:
             // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt"
-            // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt"
             // for docker builds:
             // "token.txt"
+
+            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt");
+        }
+
+        private static string ReadAdminIDFile()
+        {
+            // for local runs:
+            // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt"
+            // for docker builds:
             // "id.txt"
 
-            _token = File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt");
-            _adminID = File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt");
+            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt");
         }
 
-        private void CreateMessageProcessor()
+        private static MessageProcessor CreateMessageProcessor()
         {
-            _messageProcessor = new MessageProcessor();
+            return new MessageProcessor();
         }
 
-        private void CreateDiscordSocketClient()
+
+        private static DiscordSocketClient CreateDiscordSocketClient()
         {
             var config = new DiscordSocketConfig { MessageCacheSize = MESSAGE_CACHE_SIZE };
-            _client = new DiscordSocketClient(config);
+            return new DiscordSocketClient(config);
         }
 
         private void SubscribeEventHandlers()
@@ -56,33 +63,31 @@ namespace DiscordBot
             _client.MessageReceived += OnMessageReceived;
         }
 
-        private async Task WaitForeverAsync()
-        {
-            await Task.Delay(-1);
-        }
-
-        private Task OnMessageReceived(SocketMessage socketMessage)
-        {
-            var msg = new Message(socketMessage, IsAdminMessage(socketMessage));
-            _messageProcessor.ProcessMessage(msg);
-            return Task.CompletedTask;
-        }
-
-        private bool IsAdminMessage(SocketMessage socketMessage)
-        {
-            return _adminID == socketMessage.Id.ToString();
-        }
-
-        private async Task LoginAsync()
+        private async Task StartupAsync()
         {
             await _client.LoginAsync(TokenType.Bot, _token);
             await _client.StartAsync();
+            await Task.Delay(-1);
         }
+
+        /////////////
+        ///////////// EVENTS
+        /////////////
 
         private Task OnLogMessageEvent(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
+        }
+        private async Task OnMessageReceived(SocketMessage socketMessage)
+        {
+            var msg = new Message(socketMessage, IsAdminMessage(socketMessage));
+            await _messageProcessor.ProcessMessage(msg);
+        }
+
+        private bool IsAdminMessage(SocketMessage socketMessage)
+        {
+            return _adminID == socketMessage.Id.ToString();
         }
     }
 }

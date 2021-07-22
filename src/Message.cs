@@ -4,8 +4,8 @@ namespace DiscordBot
 {
     class Message
     {
-        private SocketMessage _socketMessage;
-        private bool _isAdmin;
+        private readonly SocketMessage _socketMessage;
+        private readonly bool _isAdmin;
 
         public Message(SocketMessage msg, bool isAdmin)
         {

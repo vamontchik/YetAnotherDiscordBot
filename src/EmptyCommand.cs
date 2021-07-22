@@ -1,9 +1,12 @@
-﻿namespace DiscordBot.src
+﻿using System.Threading.Tasks;
+
+namespace DiscordBot.src
 {
     class EmptyCommand : ICommand
     {
-        public void Execute()
-        { 
+        public Task ExecuteAsync()
+        {
+            return Task.CompletedTask;
         }
     }
 }

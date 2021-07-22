@@ -2,12 +2,13 @@
 using DiscordBot.src;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DiscordBot
 {
     class MessageProcessor
     {
-        private Dictionary<string, Type> _commandToType;
+        private readonly Dictionary<string, Type> _commandToType;
 
         public MessageProcessor()
         {
@@ -17,10 +18,10 @@ namespace DiscordBot
             };
         }
 
-        public void ProcessMessage(Message message)
+        public async Task ProcessMessage(Message message)
         {
             var command = ParseMessage(message.SocketMessage);
-            command.Execute();
+            await command.ExecuteAsync();
         }
 
         private ICommand ParseMessage(SocketMessage socketMessage)

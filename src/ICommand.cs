@@ -1,7 +1,9 @@
-﻿namespace DiscordBot.src
+﻿using System.Threading.Tasks;
+
+namespace DiscordBot.src
 {
     interface ICommand
     {
-        public void Execute();
+        public Task ExecuteAsync();
     }
 }

@@ -63,9 +63,14 @@ namespace DiscordBot
 
         private Task OnMessageReceived(SocketMessage socketMessage)
         {
-            var msg = new Message { SocketMessage = socketMessage, AdminID = _adminID };
+            var msg = new Message(socketMessage, IsAdminMessage(socketMessage));
             _messageProcessor.ProcessMessage(msg);
             return Task.CompletedTask;
+        }
+
+        private bool IsAdminMessage(SocketMessage socketMessage)
+        {
+            return _adminID == socketMessage.Id.ToString();
         }
 
         private async Task LoginAsync()

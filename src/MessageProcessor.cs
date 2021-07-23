@@ -47,9 +47,9 @@ namespace DiscordBot.src
         private ICommand ParseIntoCommand(string[] splitMessageContents, SocketMessage socketMessage)
         {
             var baseCommand = splitMessageContents[0];
-            
-            string userChoice = GetUserChoiceOrDefault(splitMessageContents, default);
-            
+
+            string userChoice = GetUserChoiceOrDefault(splitMessageContents, "");
+
             var type = _commandToType[baseCommand];
 
             // !!!

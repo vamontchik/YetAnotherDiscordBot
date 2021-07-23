@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DiscordBot
+namespace DiscordBot.src
 {
     class MessageProcessor
     {

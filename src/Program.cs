@@ -25,7 +25,7 @@ namespace DiscordBot
             SubscribeEventHandlers();
         }
 
-        private string ReadTokenFile()
+        private static string ReadTokenFile()
         {
             // for local runs:
             // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt"
@@ -50,7 +50,6 @@ namespace DiscordBot
             return new MessageProcessor();
         }
 
-
         private static DiscordSocketClient CreateDiscordSocketClient()
         {
             var config = new DiscordSocketConfig { MessageCacheSize = MESSAGE_CACHE_SIZE };
@@ -73,7 +72,7 @@ namespace DiscordBot
         /////////////
         ///////////// EVENTS
         /////////////
-
+        ///
         private Task OnLogMessageEvent(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());

@@ -32,28 +32,37 @@ namespace DiscordBot
             if (!IsValidCommand(split))
                 return new EmptyCommand();
 
-            return ParseIntoCommand(split, socketMessage.Channel);
+            return ParseIntoCommand(split, socketMessage);
         }
 
         private bool IsValidCommand(string[] splitMessageContents)
         {
-            if (splitMessageContents.Length <= 1)
+            if (splitMessageContents.Length == 0)
                 return false;
 
             var baseCommand = splitMessageContents[0];
             return _commandToType.ContainsKey(baseCommand);
         }
 
-        private ICommand ParseIntoCommand(string[] splitMessageContents, ISocketMessageChannel messageChannel)
+        private ICommand ParseIntoCommand(string[] splitMessageContents, SocketMessage socketMessage)
         {
             var baseCommand = splitMessageContents[0];
-            var userChoice = splitMessageContents[1];
-
+            
+            string userChoice = GetUserChoiceOrDefault(splitMessageContents, default);
+            
             var type = _commandToType[baseCommand];
 
-            // how to use magic to get around types ... :)
-            object[] argsToConstructor = new object[] { userChoice, messageChannel };
+            // !!!
+            object[] argsToConstructor = new object[] { userChoice, socketMessage };
             return Activator.CreateInstance(type, argsToConstructor) as ICommand;
+        }
+
+        private static string GetUserChoiceOrDefault(string[] splitMessageContents, string defaultStr)
+        {
+            if (splitMessageContents.Length == 1)
+                return defaultStr;
+            else
+                return splitMessageContents[1].ToLower();
         }
     }
 }

@@ -38,8 +38,9 @@ namespace DiscordBot.src
         private readonly Random _rnd;
 
         private readonly ISocketMessageChannel _destChannel;
+        private readonly SocketUser _user;
 
-        public RockPaperScissorsCommand(string userChoice, ISocketMessageChannel messageChannel)
+        public RockPaperScissorsCommand(string userChoice, SocketMessage socketMessage)
         {
             _rnd = new Random();
             _choices = new Dictionary<int, RPSType>
@@ -55,7 +56,9 @@ namespace DiscordBot.src
                 { "scissors", RPSType.Scissors }
             };
             _userChoice = userChoice;
-            _destChannel = messageChannel;
+
+            _destChannel = socketMessage.Channel;
+            _user = socketMessage.Author;
         }
 
         public async Task ExecuteAsync()
@@ -63,7 +66,7 @@ namespace DiscordBot.src
             if (!ValidUserChoice())
                 await SendErrorMessageAsync();
             else
-                await SendGameMessage();
+                await SendGameMessageAsync();
         }
 
         private bool ValidUserChoice()
@@ -76,7 +79,7 @@ namespace DiscordBot.src
             await _destChannel.SendMessageAsync("That's not a rock, paper, or scissors!");
         }
 
-        private async Task SendGameMessage()
+        private async Task SendGameMessageAsync()
         {
             var botChoice = _rnd.Next(Enum.GetNames(typeof(RPSType)).Length);
             var botChoiceAsType = _choices[botChoice];
@@ -86,14 +89,14 @@ namespace DiscordBot.src
             await _destChannel.SendMessageAsync($"User: {userChoiceAsType}, Bot: {botChoiceAsType}, Winner: {winner}");
         }
 
-        private static string GetWinner(RPSType first, RPSType second)
+        private string GetWinner(RPSType user, RPSType bot)
         {
-            var compare = first.Compare(second);
+            var compare = user.Compare(bot);
 
             if (compare == -1)
-                return second.ToString();
+                return "Bot";
             else if (compare == 1)
-                return first.ToString();
+                return _user.Username;
             else
                 return "Tie!";
         }

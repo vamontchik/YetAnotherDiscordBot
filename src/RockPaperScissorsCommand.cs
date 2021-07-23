@@ -5,60 +5,48 @@ using System.Threading.Tasks;
 
 namespace DiscordBot.src
 {
-    enum RPSType
-    {
-        Rock, Paper, Scissors
-    }
-
-    static class RPSTypeExtensions
-    {
-        public static int Compare(this RPSType ours, RPSType theirs)
-        {
-            if (ours == RPSType.Rock && theirs == RPSType.Scissors || 
-                ours == RPSType.Paper && theirs == RPSType.Rock || 
-                ours == RPSType.Scissors && theirs == RPSType.Paper
-            )
-                return 1;
-
-            if (theirs == RPSType.Rock && ours == RPSType.Scissors || 
-                theirs == RPSType.Paper && ours == RPSType.Rock || 
-                theirs == RPSType.Scissors && ours == RPSType.Paper
-            )
-                return -1;
-
-            return 0;
-        }
-    }
-
     class RockPaperScissorsCommand : ICommand
     {
-        private readonly string _userChoice;
+        private readonly Random _rnd;
         private readonly Dictionary<string, RPSType> _strChoices;
         private readonly Dictionary<int, RPSType> _choices;
-        private readonly Random _rnd;
-
+        private readonly string _userChoice;
         private readonly ISocketMessageChannel _destChannel;
         private readonly SocketUser _user;
 
         public RockPaperScissorsCommand(string userChoice, SocketMessage socketMessage)
         {
-            _rnd = new Random();
-            _choices = new Dictionary<int, RPSType>
+            _rnd = CreateRandom();
+            _choices = CreateChoicesDictionary();
+            _strChoices = CreateStrChoicesDictionary();
+            _userChoice = userChoice;
+            _destChannel = socketMessage.Channel;
+            _user = socketMessage.Author;
+        }
+
+        private static Random CreateRandom()
+        {
+            return new Random();
+        }
+
+        private static Dictionary<int, RPSType> CreateChoicesDictionary()
+        {
+            return new()
             {
                 { 0, RPSType.Rock },
                 { 1, RPSType.Paper },
                 { 2, RPSType.Scissors }
             };
-            _strChoices = new Dictionary<string, RPSType>
+        }
+
+        private static Dictionary<string, RPSType> CreateStrChoicesDictionary()
+        {
+            return new()
             {
                 { "rock", RPSType.Rock },
                 { "paper", RPSType.Paper },
                 { "scissors", RPSType.Scissors }
             };
-            _userChoice = userChoice;
-
-            _destChannel = socketMessage.Channel;
-            _user = socketMessage.Author;
         }
 
         public async Task ExecuteAsync()
@@ -81,23 +69,39 @@ namespace DiscordBot.src
 
         private async Task SendGameMessageAsync()
         {
-            var botChoice = _rnd.Next(Enum.GetNames(typeof(RPSType)).Length);
-            var botChoiceAsType = _choices[botChoice];
-            var userChoiceAsType = _strChoices[_userChoice];
-            var winner = GetWinner(userChoiceAsType, botChoiceAsType);
-
-            await _destChannel.SendMessageAsync($"User: {userChoiceAsType}, Bot: {botChoiceAsType}, Winner: {winner}");
+            var bot = CreateBotPlayer();
+            var user = CreateUserPlayer();
+            var winner = GetWinner(bot, user);
+            await _destChannel.SendMessageAsync($"user: {user.Type}, Bot: {bot.Type}, Winner: {winner}");
         }
 
-        private string GetWinner(RPSType user, RPSType bot)
+        private RPSPlayer CreateBotPlayer()
         {
-            var compare = user.Compare(bot);
+            int botChoice = CreateRandomBotChoice();
+            var botChoiceAsType = _choices[botChoice];
+            return new RPSPlayer(botChoiceAsType, "Bot");
+        }
+
+        private int CreateRandomBotChoice()
+        {
+            return _rnd.Next(Enum.GetNames(typeof(RPSType)).Length);
+        }
+
+        private RPSPlayer CreateUserPlayer()
+        {
+            var userChoiceAsType = _strChoices[_userChoice];
+            return new RPSPlayer(userChoiceAsType, _user.Username);
+        }
+
+        private static string GetWinner(RPSPlayer first, RPSPlayer second)
+        {
+            var compare = first.Type.Compare(second.Type);
 
             if (compare == -1)
-                return "Bot";
+                return second.Name;
             else if (compare == 1)
-                return _user.Username;
-            else
+                return first.Name;
+            else // 0
                 return "Tie!";
         }
     }

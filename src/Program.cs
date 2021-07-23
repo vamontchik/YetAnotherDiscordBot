@@ -16,7 +16,7 @@ namespace DiscordBot
 
         public static void Main() => new Program().StartupAsync().Wait();
 
-        private Program()
+        public Program()
         {
             _token = ReadTokenFile();
             _adminID = ReadAdminIDFile();
@@ -32,7 +32,7 @@ namespace DiscordBot
             // for docker builds:
             // "token.txt"
 
-            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt");
+            return File.ReadAllText(@"token.txt");
         }
 
         private static string ReadAdminIDFile()
@@ -42,7 +42,7 @@ namespace DiscordBot
             // for docker builds:
             // "id.txt"
 
-            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt");
+            return File.ReadAllText(@"id.txt");
         }
 
         private static MessageProcessor CreateMessageProcessor()
@@ -62,7 +62,7 @@ namespace DiscordBot
             _client.MessageReceived += OnMessageReceived;
         }
 
-        private async Task StartupAsync()
+        public async Task StartupAsync()
         {
             await _client.LoginAsync(TokenType.Bot, _token);
             await _client.StartAsync();
@@ -72,7 +72,7 @@ namespace DiscordBot
         /////////////
         ///////////// EVENTS
         /////////////
-        ///
+
         private Task OnLogMessageEvent(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());

@@ -32,7 +32,7 @@ namespace DiscordBot.src
             // for docker builds:
             // "token.txt"
 
-            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt");
+            return File.ReadAllText("token.txt");
         }
 
         private static string ReadAdminIDFile()
@@ -42,7 +42,7 @@ namespace DiscordBot.src
             // for docker builds:
             // "id.txt"
 
-            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt");
+            return File.ReadAllText("id.txt");
         }
 
         private static DiscordSocketClient CreateDiscordSocketClient()

@@ -1,31 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class Stat
+    internal class Stat
     {
-        private Dictionary<RPSType, int> _winsByType;
-        private Dictionary<RPSType, int> _totalByType;
+        private readonly Dictionary<RpsType, int> _winsByType;
+        private readonly Dictionary<RpsType, int> _totalByType;
 
         public Stat()
         {
-            _winsByType = new()
+            _winsByType = new Dictionary<RpsType, int>
             {
-                { RPSType.Rock, 0 },
-                { RPSType.Paper, 0 },
-                { RPSType.Scissors, 0 }
+                { RpsType.Rock, 0 },
+                { RpsType.Paper, 0 },
+                { RpsType.Scissors, 0 }
             };
 
-            _totalByType = new()
+            _totalByType = new Dictionary<RpsType, int>
             {
-                { RPSType.Rock, 0 },
-                { RPSType.Paper, 0 },
-                { RPSType.Scissors, 0 }
+                { RpsType.Rock, 0 },
+                { RpsType.Paper, 0 },
+                { RpsType.Scissors, 0 }
             };
         }
 
-        public void Update(RPSType rpsType, StatResultType statType)
+        public void Update(RpsType rpsType, StatResultType statType)
         {
             _totalByType[rpsType] += 1;
             
@@ -38,21 +38,21 @@ namespace DiscordBot.src
         public string ComputeStats()
         {
             var res = "";
-            var types = Enum.GetValues(typeof(RPSType));
+            var types = Enum.GetValues(typeof(RpsType));
 
-            foreach (RPSType t in types)
+            foreach (RpsType t in types)
             {
                 var winsForType = _winsByType[t];
                 var totalForType = _totalByType[t];
-                var percentage = CalculatePercent(wins: winsForType, total: totalForType);
-                res += $"{t} : {winsForType} wins, {totalForType} games, {percentage}% winrate";
+                var percentage = CalculatePercent(winsForType, totalForType);
+                res += $"{t} : {winsForType} wins, {totalForType} games, {percentage}% win rate";
                 res += Environment.NewLine;
             }
             
             return res;
         }
 
-        private int CalculatePercent(int wins, int total)
+        private static int CalculatePercent(int wins, int total)
         {
             return total == 0 ? 0 : Convert.ToInt32(100 * (1.0 * wins / total));
         }

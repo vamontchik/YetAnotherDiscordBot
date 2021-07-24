@@ -1,6 +1,6 @@
-﻿namespace DiscordBot.src
+﻿namespace DiscordBot
 {
-    enum GameResultType
+    internal enum GameResultType
     {
         P1, P2, Tie
     }

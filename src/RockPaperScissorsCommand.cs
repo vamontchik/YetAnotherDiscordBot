@@ -3,51 +3,54 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class RockPaperScissorsCommand : ICommand
+    internal class RockPaperScissorsCommand : ICommand
     {
         private readonly Random _rnd;
-        private readonly Dictionary<int, RPSType> _choices;
-        private readonly Dictionary<string, RPSType> _strChoices;
+        private readonly Dictionary<int, RpsType> _choices;
+        private readonly Dictionary<string, RpsType> _strChoices;
         private readonly string _userChoice;
         private readonly ISocketMessageChannel _destChannel;
         private readonly SocketUser _user;
         private readonly StatsManager _statsManager;
+        
+        private readonly RpsPlayer _bot;
+        private readonly RpsPlayer _player;
 
-        public RockPaperScissorsCommand(string[] msgContents, SocketMessage socketMessage)
+        public RockPaperScissorsCommand(IReadOnlyList<string> msgContents, SocketMessage socketMessage)
         {
-            _rnd = new();
+            _rnd = new Random();
             _choices = CreateChoicesDictionary();
             _strChoices = CreateStrChoicesDictionary();
             
-            if (msgContents.Length > 1)
-                _userChoice = msgContents[1].ToLower();
-            else
-                _userChoice = ""; // error out case...
+            _userChoice = msgContents.Count > 1 ? msgContents[1].ToLower() : "";
             
             _destChannel = socketMessage.Channel;
             _user = socketMessage.Author;
             _statsManager = StatsManager.Instance;
+            
+            _bot = CreateBotPlayer();
+            _player = CreateUserPlayer();
         }
 
-        private static Dictionary<int, RPSType> CreateChoicesDictionary()
+        private static Dictionary<int, RpsType> CreateChoicesDictionary()
         {
             return new()
             {
-                { 0, RPSType.Rock },
-                { 1, RPSType.Paper },
-                { 2, RPSType.Scissors }
+                { 0, RpsType.Rock },
+                { 1, RpsType.Paper },
+                { 2, RpsType.Scissors }
             };
         }
 
-        private static Dictionary<string, RPSType> CreateStrChoicesDictionary()
+        private static Dictionary<string, RpsType> CreateStrChoicesDictionary()
         {
             return new()
             {
-                { "rock", RPSType.Rock },
-                { "paper", RPSType.Paper },
-                { "scissors", RPSType.Scissors }
+                { "rock", RpsType.Rock },
+                { "paper", RpsType.Paper },
+                { "scissors", RpsType.Scissors }
             };
         }
 
@@ -71,48 +74,46 @@ namespace DiscordBot.src
 
         private async Task DoGameAsync()
         {
-            var bot = CreateBotPlayer();
-            var user = CreateUserPlayer();
-            var gameResult = GetGameResult(bot, user);
-            await SendGameResultAsync(gameResult, bot: bot, user: user);
+            var gameResult = GetGameResult(_bot, _player);
+            await SendGameResultAsync(gameResult, _bot, _player);
             _statsManager.Update(gameResult);
         }
 
-        private async Task SendGameResultAsync(GameResult gameResult, RPSPlayer bot, RPSPlayer user)
+        private async Task SendGameResultAsync(GameResult gameResult, RpsPlayer bot, RpsPlayer user)
         {
             var nullableWinner = gameResult.GetWinner();
             var resultStr = nullableWinner is not null ? $"Result: {nullableWinner.Name} Wins!" : "Result: Tie";
             await _destChannel.SendMessageAsync($"User: {user.Type}, Bot: {bot.Type}, {resultStr}");
         }
 
-        private RPSPlayer CreateBotPlayer()
+        private RpsPlayer CreateBotPlayer()
         {
-            int botChoice = CreateRandomBotChoice();
+            var botChoice = CreateRandomBotChoice();
             var botChoiceAsType = _choices[botChoice];
-            return new RPSPlayer(botChoiceAsType, "Bot", RPSPlayer.BOT_ID);
+            return new RpsPlayer(botChoiceAsType, "Bot", RpsPlayer.BotId);
         }
 
         private int CreateRandomBotChoice()
         {
-            return _rnd.Next(Enum.GetNames(typeof(RPSType)).Length);
+            return _rnd.Next(Enum.GetNames(typeof(RpsType)).Length);
         }
 
-        private RPSPlayer CreateUserPlayer()
+        private RpsPlayer CreateUserPlayer()
         {
             var userChoiceAsType = _strChoices[_userChoice];
-            return new RPSPlayer(userChoiceAsType, _user.Username, _user.Id);
+            return new RpsPlayer(userChoiceAsType, _user.Username, _user.Id);
         }
 
-        private static GameResult GetGameResult(RPSPlayer first, RPSPlayer second)
+        private static GameResult GetGameResult(RpsPlayer first, RpsPlayer second)
         {
             var compare = first.Type.Compare(second.Type);
 
-            if (compare == -1)
-                return new GameResult(first, second, GameResultType.P2);
-            else if (compare == 1)
-                return new GameResult(first, second, GameResultType.P1);
-            else // 0 == tie
-                return new GameResult(first, second, GameResultType.Tie);
+            return compare switch
+            {
+                -1 => new GameResult(first, second, GameResultType.P2),
+                1 => new GameResult(first, second, GameResultType.P1),
+                _ => new GameResult(first, second, GameResultType.Tie)
+            };
         }
     }
 }

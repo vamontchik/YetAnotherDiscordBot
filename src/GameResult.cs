@@ -1,38 +1,37 @@
-﻿namespace DiscordBot.src
+﻿namespace DiscordBot
 {
-    class GameResult
+    internal class GameResult
     {
-        private readonly RPSPlayer _p1;
-        private readonly RPSPlayer _p2;
         private readonly GameResultType _winType;
 
-        public GameResult(RPSPlayer p1, RPSPlayer p2, GameResultType winType)
+        public GameResult(RpsPlayer p1, RpsPlayer p2, GameResultType winType)
         {
-            _p1 = p1;
-            _p2 = p2;
+            P1 = p1;
+            P2 = p2;
             _winType = winType;
         }
 
-        public RPSPlayer? GetWinner()
+        public RpsPlayer? GetWinner()
         {
-            if (_winType == GameResultType.P1)
-                return _p1;
-            else if (_winType == GameResultType.P2)
-                return _p2;
-            else // _winType == GameResult.Tie
-                return null;
+            return _winType switch
+            {
+                GameResultType.P1 => P1,
+                GameResultType.P2 => P2,
+                _ => null
+            };
         }
 
-        public RPSPlayer? GetLoser()
+        public RpsPlayer? GetLoser()
         {
-            if (_winType == GameResultType.P1)
-                return _p2;
-            else if (_winType == GameResultType.P2)
-                return _p1;
-            else // _winType == GameResult.Tie
-                return null;
+            return _winType switch
+            {
+                GameResultType.P1 => P2,
+                GameResultType.P2 => P1,
+                _ => null
+            };
         }
-        public RPSPlayer P1 => _p1;
-        public RPSPlayer P2 => _p2;
+        public RpsPlayer P1 { get; }
+
+        public RpsPlayer P2 { get; }
     }
 }

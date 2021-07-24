@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class EmptyCommand : ICommand
+    internal class EmptyCommand : ICommand
     {
         public Task ExecuteAsync()
         {

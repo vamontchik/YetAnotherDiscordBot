@@ -1,4 +1,4 @@
-﻿namespace DiscordBot.src
+﻿namespace DiscordBot
 {
-    enum RPSType { Rock, Paper, Scissors }
+    internal enum RpsType { Rock, Paper, Scissors }
 }

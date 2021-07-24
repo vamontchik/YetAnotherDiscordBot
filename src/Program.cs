@@ -4,23 +4,23 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class Program
+    internal class Program
     {
         private readonly DiscordSocketClient _client;
         private readonly MessageProcessor _messageProcessor;
-        private readonly string _adminID;
+        private readonly string _adminId;
         private readonly string _token;
-        private const int MESSAGE_CACHE_SIZE = 100;
+        private const int MessageCacheSize = 100;
 
         public static void Main() => new Program().StartupAsync().Wait();
 
         public Program()
         {
             _token = ReadTokenFile();
-            _adminID = ReadAdminIDFile();
-            _messageProcessor = new();
+            _adminId = ReadAdminIdFile();
+            _messageProcessor = new MessageProcessor();
             _client = CreateDiscordSocketClient();
             SubscribeEventHandlers();
         }
@@ -35,7 +35,7 @@ namespace DiscordBot.src
             return File.ReadAllText("token.txt");
         }
 
-        private static string ReadAdminIDFile()
+        private static string ReadAdminIdFile()
         {
             // for local runs:
             // @"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt"
@@ -47,7 +47,7 @@ namespace DiscordBot.src
 
         private static DiscordSocketClient CreateDiscordSocketClient()
         {
-            var config = new DiscordSocketConfig { MessageCacheSize = MESSAGE_CACHE_SIZE };
+            var config = new DiscordSocketConfig { MessageCacheSize = MessageCacheSize };
             return new DiscordSocketClient(config);
         }
 
@@ -68,7 +68,7 @@ namespace DiscordBot.src
         ///////////// EVENTS
         /////////////
 
-        private Task OnLogMessageEvent(LogMessage msg)
+        private static Task OnLogMessageEvent(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
@@ -81,7 +81,7 @@ namespace DiscordBot.src
 
         private bool IsAdminMessage(SocketMessage socketMessage)
         {
-            return _adminID == socketMessage.Id.ToString();
+            return _adminId == socketMessage.Id.ToString();
         }
     }
 }

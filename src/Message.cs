@@ -1,19 +1,16 @@
 ﻿using Discord.WebSocket;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class Message
+    internal class Message
     {
-        private readonly SocketMessage _socketMessage;
-        private readonly bool _isAdmin;
-
         public Message(SocketMessage msg, bool isAdmin)
         {
-            _socketMessage = msg;
-            _isAdmin = isAdmin;
+            SocketMessage = msg;
+            IsAdminMessage = isAdmin;
         }
 
-        public SocketMessage SocketMessage { get => _socketMessage; }
-        public bool IsAdminMessage { get => _isAdmin; }
+        public SocketMessage SocketMessage { get; }
+        public bool IsAdminMessage { get; }
     }
 }

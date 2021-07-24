@@ -1,23 +1,18 @@
-﻿namespace DiscordBot.src
+﻿namespace DiscordBot
 {
-    class RPSPlayer
+    internal class RpsPlayer
     {
-        public const ulong BOT_ID = 0;
-        // public const ulong INVALID_ID = ulong.MaxValue;
+        public const ulong BotId = 0;
 
-        private readonly RPSType _type;
-        private readonly string _name;
-        private readonly ulong _id;
-        public RPSPlayer(RPSType type, string name, ulong id)
+        public RpsPlayer(RpsType type, string name, ulong id)
         {
-            _type = type;
-            _name = name;
-            _id = id;
+            Type = type;
+            Name = name;
+            Id = id;
         }
 
-        public RPSType Type { get => _type; }
-        public string Name { get => _name; }
-        public ulong Id { get => _id; }
-
+        public RpsType Type { get; }
+        public string Name { get; }
+        public ulong Id { get; }
     }
 }

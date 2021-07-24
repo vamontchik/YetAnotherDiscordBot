@@ -1,25 +1,25 @@
 ﻿using Discord.WebSocket;
 using System.Threading.Tasks;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class StatsCommand : ICommand
+    internal class StatsCommand : ICommand
     {
         private readonly ISocketMessageChannel _destChannel;
-        private readonly ulong _userID;
+        private readonly ulong _userId;
         private readonly string _userName;
 
         public StatsCommand(SocketMessage socketMessage)
         {
             _destChannel = socketMessage.Channel;
-            _userID = socketMessage.Author.Id;
+            _userId = socketMessage.Author.Id;
             _userName = socketMessage.Author.Username;
         }
 
         public async Task ExecuteAsync()
         {
             var statsManager = StatsManager.Instance;
-            var stat = statsManager.GetStat(_userID);
+            var stat = statsManager.GetStat(_userId);
             if (stat is null)
                 await _destChannel.SendMessageAsync($"No stats found for {_userName}");
             else

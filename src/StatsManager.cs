@@ -1,50 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace DiscordBot.src
+namespace DiscordBot
 {
-    class StatsManager
+    internal class StatsManager
     {
         private StatsManager()
         {
-            _idToInfo = new();
+            _idToInfo = new Dictionary<ulong, Stat>();
         }
         
-        private static readonly Lazy<StatsManager> _lazy = new(() => new StatsManager());
+        private static readonly Lazy<StatsManager> Lazy = new(() => new StatsManager());
 
-        public static StatsManager Instance => _lazy.Value;
+        public static StatsManager Instance => Lazy.Value;
 
         //////////////
         //////////////
         //////////////
 
-        private Dictionary<ulong, Stat> _idToInfo;
+        private readonly Dictionary<ulong, Stat> _idToInfo;
 
         public void Update(GameResult gameResult)
         {
             var nullableWinner = gameResult.GetWinner();
             if (nullableWinner is null)
-                UpdateBothForTie(new List<RPSPlayer>(){ gameResult.P1, gameResult.P2 });
+                UpdateBothForTie(new List<RpsPlayer> { gameResult.P1, gameResult.P2 });
             else
             {
-                RPSPlayer winner = nullableWinner; // NOTE: can't be null, so "cast" to a non-nullable object
-                RPSPlayer loser = gameResult.GetLoser(); // NOTE: can't be null if we have a non-null winner !
-                
-                UpdatePlayer(winner, StatResultType.Win);
+                RpsPlayer loser = gameResult.GetLoser() ?? throw new InvalidOperationException();
+                UpdatePlayer(nullableWinner, StatResultType.Win);
                 UpdatePlayer(loser, StatResultType.Loss);
             }
         }
 
-        private void UpdateBothForTie(List<RPSPlayer> players)
+        private void UpdateBothForTie(IEnumerable<RpsPlayer> players)
         {
-            foreach (RPSPlayer p in players)
+            foreach (RpsPlayer p in players)
             {
                 var statForPlayer = GetFromDictOrNew(p.Id);
                 statForPlayer.Update(p.Type, StatResultType.Tie);
             }
         }
 
-        private void UpdatePlayer(RPSPlayer p, StatResultType statType)
+        private void UpdatePlayer(RpsPlayer p, StatResultType statType)
         {
             var statForPlayer = GetFromDictOrNew(p.Id);
             statForPlayer.Update(p.Type, statType);
@@ -52,10 +50,9 @@ namespace DiscordBot.src
 
         private Stat GetFromDictOrNew(ulong id)
         {
-            Stat stat;
-            var success = _idToInfo.TryGetValue(id, out stat);
+            var success = _idToInfo.TryGetValue(id, out var stat);
             if (success)
-                return stat;
+                return stat!;
 
             stat = new Stat();
             _idToInfo.Add(id, stat);
@@ -64,11 +61,8 @@ namespace DiscordBot.src
 
         public Stat? GetStat(ulong id)
         {
-            Stat stat;
-            var success = _idToInfo.TryGetValue(id, out stat);
-            if (success)
-                return stat;
-            return null;
+            var success = _idToInfo.TryGetValue(id, out var stat);
+            return success ? stat : null;
         }
     }
 }

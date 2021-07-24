@@ -1,18 +1,18 @@
-﻿namespace DiscordBot.src
+﻿namespace DiscordBot
 {
-    static class RPSTypeExtensions
+    internal static class RpsTypeExtensions
     {
-        public static int Compare(this RPSType ours, RPSType theirs)
+        public static int Compare(this RpsType ours, RpsType theirs)
         {
-            if (ours == RPSType.Rock && theirs == RPSType.Scissors ||
-                ours == RPSType.Paper && theirs == RPSType.Rock ||
-                ours == RPSType.Scissors && theirs == RPSType.Paper
+            if (ours == RpsType.Rock && theirs == RpsType.Scissors ||
+                ours == RpsType.Paper && theirs == RpsType.Rock ||
+                ours == RpsType.Scissors && theirs == RpsType.Paper
             )
                 return 1;
 
-            if (theirs == RPSType.Rock && ours == RPSType.Scissors ||
-                theirs == RPSType.Paper && ours == RPSType.Rock ||
-                theirs == RPSType.Scissors && ours == RPSType.Paper
+            if (theirs == RpsType.Rock && ours == RpsType.Scissors ||
+                theirs == RpsType.Paper && ours == RpsType.Rock ||
+                theirs == RpsType.Scissors && ours == RpsType.Paper
             )
                 return -1;
 

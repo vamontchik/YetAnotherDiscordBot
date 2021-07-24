@@ -20,7 +20,7 @@ namespace DiscordBot.src
         {
             var statsManager = StatsManager.Instance;
             var stat = statsManager.GetStat(_userID);
-            if (stat == null)
+            if (stat is null)
                 await _destChannel.SendMessageAsync($"No stats found for {_userName}");
             else
             {

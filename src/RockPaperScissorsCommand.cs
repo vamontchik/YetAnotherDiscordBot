@@ -14,9 +14,6 @@ namespace DiscordBot
         private readonly ISocketMessageChannel _destChannel;
         private readonly SocketUser _user;
         private readonly StatsManager _statsManager;
-        
-        private readonly RpsPlayer _bot;
-        private readonly RpsPlayer _player;
 
         public RockPaperScissorsCommand(IReadOnlyList<string> msgContents, SocketMessage socketMessage)
         {
@@ -30,8 +27,7 @@ namespace DiscordBot
             _user = socketMessage.Author;
             _statsManager = StatsManager.Instance;
             
-            _bot = CreateBotPlayer();
-            _player = CreateUserPlayer();
+
         }
 
         private static Dictionary<int, RpsType> CreateChoicesDictionary()
@@ -64,7 +60,7 @@ namespace DiscordBot
 
         private bool ValidUserChoice()
         {
-            return _strChoices.ContainsKey(_userChoice.ToLower());
+            return _strChoices.ContainsKey(_userChoice);
         }
 
         private async Task SendErrorMessageAsync()
@@ -74,8 +70,10 @@ namespace DiscordBot
 
         private async Task DoGameAsync()
         {
-            var gameResult = GetGameResult(_bot, _player);
-            await SendGameResultAsync(gameResult, _bot, _player);
+            var bot = CreateBotPlayer();
+            var player = CreateUserPlayer();
+            var gameResult = GetGameResult(bot, player);
+            await SendGameResultAsync(gameResult, bot, player);
             _statsManager.Update(gameResult);
         }
 

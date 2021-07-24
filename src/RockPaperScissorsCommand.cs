@@ -8,25 +8,27 @@ namespace DiscordBot.src
     class RockPaperScissorsCommand : ICommand
     {
         private readonly Random _rnd;
-        private readonly Dictionary<string, RPSType> _strChoices;
         private readonly Dictionary<int, RPSType> _choices;
+        private readonly Dictionary<string, RPSType> _strChoices;
         private readonly string _userChoice;
         private readonly ISocketMessageChannel _destChannel;
         private readonly SocketUser _user;
+        private readonly StatsManager _statsManager;
 
-        public RockPaperScissorsCommand(string userChoice, SocketMessage socketMessage)
+        public RockPaperScissorsCommand(string[] msgContents, SocketMessage socketMessage)
         {
-            _rnd = CreateRandom();
+            _rnd = new();
             _choices = CreateChoicesDictionary();
             _strChoices = CreateStrChoicesDictionary();
-            _userChoice = userChoice;
+            
+            if (msgContents.Length > 1)
+                _userChoice = msgContents[1].ToLower();
+            else
+                _userChoice = ""; // error out case...
+            
             _destChannel = socketMessage.Channel;
             _user = socketMessage.Author;
-        }
-
-        private static Random CreateRandom()
-        {
-            return new Random();
+            _statsManager = StatsManager.Instance;
         }
 
         private static Dictionary<int, RPSType> CreateChoicesDictionary()
@@ -54,7 +56,7 @@ namespace DiscordBot.src
             if (!ValidUserChoice())
                 await SendErrorMessageAsync();
             else
-                await SendGameMessageAsync();
+                await DoGameAsync();
         }
 
         private bool ValidUserChoice()
@@ -67,19 +69,27 @@ namespace DiscordBot.src
             await _destChannel.SendMessageAsync("That's not a rock, paper, or scissors!");
         }
 
-        private async Task SendGameMessageAsync()
+        private async Task DoGameAsync()
         {
             var bot = CreateBotPlayer();
             var user = CreateUserPlayer();
-            var winner = GetWinner(bot, user);
-            await _destChannel.SendMessageAsync($"user: {user.Type}, Bot: {bot.Type}, Winner: {winner}");
+            var gameResult = GetGameResult(bot, user);
+            await SendGameResultAsync(gameResult, bot: bot, user: user);
+            _statsManager.Update(gameResult);
+        }
+
+        private async Task SendGameResultAsync(GameResult gameResult, RPSPlayer bot, RPSPlayer user)
+        {
+            var nullableWinner = gameResult.GetWinner();
+            var resultStr = nullableWinner is not null ? $"Result: {nullableWinner.Name} Wins!" : "Result: Tie";
+            await _destChannel.SendMessageAsync($"User: {user.Type}, Bot: {bot.Type}, {resultStr}");
         }
 
         private RPSPlayer CreateBotPlayer()
         {
             int botChoice = CreateRandomBotChoice();
             var botChoiceAsType = _choices[botChoice];
-            return new RPSPlayer(botChoiceAsType, "Bot");
+            return new RPSPlayer(botChoiceAsType, "Bot", RPSPlayer.BOT_ID);
         }
 
         private int CreateRandomBotChoice()
@@ -90,19 +100,19 @@ namespace DiscordBot.src
         private RPSPlayer CreateUserPlayer()
         {
             var userChoiceAsType = _strChoices[_userChoice];
-            return new RPSPlayer(userChoiceAsType, _user.Username);
+            return new RPSPlayer(userChoiceAsType, _user.Username, _user.Id);
         }
 
-        private static string GetWinner(RPSPlayer first, RPSPlayer second)
+        private static GameResult GetGameResult(RPSPlayer first, RPSPlayer second)
         {
             var compare = first.Type.Compare(second.Type);
 
             if (compare == -1)
-                return second.Name;
+                return new GameResult(first, second, GameResultType.P2);
             else if (compare == 1)
-                return first.Name;
-            else // 0
-                return "Tie!";
+                return new GameResult(first, second, GameResultType.P1);
+            else // 0 == tie
+                return new GameResult(first, second, GameResultType.Tie);
         }
     }
 }

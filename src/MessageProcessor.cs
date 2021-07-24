@@ -1,5 +1,4 @@
 ﻿using Discord.WebSocket;
-using DiscordBot.src;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -8,18 +7,20 @@ namespace DiscordBot.src
 {
     class MessageProcessor
     {
-        private readonly Dictionary<string, Type> _commandToType;
+        private readonly HashSet<string> _commands;
 
         public MessageProcessor()
         {
-            _commandToType = new Dictionary<string, Type>
+            _commands = new()
             {
-                { "!rps", typeof(RockPaperScissorsCommand) }
+                "!rps",
+                "!stats"
             };
         }
 
         public async Task ProcessMessage(Message message)
         {
+            // TODO: when to implement use of message.IsAdmin ?
             var command = ParseMessage(message.SocketMessage);
             await command.ExecuteAsync();
         }
@@ -28,7 +29,7 @@ namespace DiscordBot.src
         {
             var contents = socketMessage.Content;
             var split = contents.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            
+
             if (!IsValidCommand(split))
                 return new EmptyCommand();
 
@@ -41,28 +42,18 @@ namespace DiscordBot.src
                 return false;
 
             var baseCommand = splitMessageContents[0];
-            return _commandToType.ContainsKey(baseCommand);
+            return _commands.Contains(baseCommand);
         }
 
-        private ICommand ParseIntoCommand(string[] splitMessageContents, SocketMessage socketMessage)
+        private static ICommand ParseIntoCommand(string[] splitMessageContents, SocketMessage socketMessage)
         {
             var baseCommand = splitMessageContents[0];
-
-            string userChoice = GetUserChoiceOrDefault(splitMessageContents, "");
-
-            var type = _commandToType[baseCommand];
-
-            // !!!
-            object[] argsToConstructor = new object[] { userChoice, socketMessage };
-            return Activator.CreateInstance(type, argsToConstructor) as ICommand;
-        }
-
-        private static string GetUserChoiceOrDefault(string[] splitMessageContents, string defaultStr)
-        {
-            if (splitMessageContents.Length == 1)
-                return defaultStr;
-            else
-                return splitMessageContents[1].ToLower();
+            return baseCommand switch
+            {
+                "!rps" => new RockPaperScissorsCommand(splitMessageContents, socketMessage),
+                "!stats" => new StatsCommand(socketMessage),
+                _ => new EmptyCommand(),
+            };
         }
     }
 }

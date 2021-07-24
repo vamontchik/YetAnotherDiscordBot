@@ -20,7 +20,7 @@ namespace DiscordBot.src
         {
             _token = ReadTokenFile();
             _adminID = ReadAdminIDFile();
-            _messageProcessor = CreateMessageProcessor();
+            _messageProcessor = new();
             _client = CreateDiscordSocketClient();
             SubscribeEventHandlers();
         }
@@ -32,7 +32,7 @@ namespace DiscordBot.src
             // for docker builds:
             // "token.txt"
 
-            return File.ReadAllText(@"token.txt");
+            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\token.txt");
         }
 
         private static string ReadAdminIDFile()
@@ -42,12 +42,7 @@ namespace DiscordBot.src
             // for docker builds:
             // "id.txt"
 
-            return File.ReadAllText(@"id.txt");
-        }
-
-        private static MessageProcessor CreateMessageProcessor()
-        {
-            return new MessageProcessor();
+            return File.ReadAllText(@"C:\Users\woofers\source\repos\DiscordBot\DiscordBot\id.txt");
         }
 
         private static DiscordSocketClient CreateDiscordSocketClient()

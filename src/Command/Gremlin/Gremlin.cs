@@ -10,7 +10,7 @@ namespace DiscordBot.Command.Gremlin
         {
             Attack = 0;
             Defense = 0;
-            Level = 1;
+            Level = 0;
         }
 
         private static readonly Lazy<Gremlin> Lazy = new(() => new Gremlin());

@@ -1,4 +1,4 @@
-﻿namespace DiscordBot
+﻿namespace DiscordBot.Command.RockPaperScissors
 {
     internal class RpsPlayer
     {

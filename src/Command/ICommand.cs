@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace DiscordBot
+namespace DiscordBot.Command
 {
     internal interface ICommand
     {

@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using DiscordBot.Command.RockPaperScissors;
 
-namespace DiscordBot
+namespace DiscordBot.Command.Stats
 {
     internal class StatsManager
     {
+        #region Singleton
+        
         private StatsManager()
         {
             _idToInfo = new Dictionary<ulong, Stat>();
@@ -13,10 +16,8 @@ namespace DiscordBot
         private static readonly Lazy<StatsManager> Lazy = new(() => new StatsManager());
 
         public static StatsManager Instance => Lazy.Value;
-
-        //////////////
-        //////////////
-        //////////////
+        
+        #endregion
 
         private readonly Dictionary<ulong, Stat> _idToInfo;
 

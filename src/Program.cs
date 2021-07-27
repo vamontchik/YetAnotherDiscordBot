@@ -9,21 +9,21 @@ namespace DiscordBot
     internal class Program
     {
         private readonly DiscordSocketClient _client;
-        private readonly MessageProcessor _messageProcessor;
         private readonly string _adminId;
         private readonly string _token;
         private const int MessageCacheSize = 100;
 
         public static void Main() => new Program().StartupAsync().Wait();
 
-        public Program()
+        private Program()
         {
             _token = ReadTokenFile();
             _adminId = ReadAdminIdFile();
-            _messageProcessor = new MessageProcessor();
             _client = CreateDiscordSocketClient();
             SubscribeEventHandlers();
         }
+
+        #region Constructor Helpers        
 
         private static string ReadTokenFile()
         {
@@ -56,32 +56,39 @@ namespace DiscordBot
             _client.Log += OnLogMessageEvent;
             _client.MessageReceived += OnMessageReceived;
         }
+        
+        #endregion
 
-        public async Task StartupAsync()
+        private async Task StartupAsync()
         {
             await _client.LoginAsync(TokenType.Bot, _token);
             await _client.StartAsync();
             await Task.Delay(-1);
         }
 
-        /////////////
-        ///////////// EVENTS
-        /////////////
-
+        #region Events
+        
         private static Task OnLogMessageEvent(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
+
         private async Task OnMessageReceived(SocketMessage socketMessage)
         {
             var msg = new Message(socketMessage, IsAdminMessage(socketMessage));
-            await _messageProcessor.ProcessMessage(msg);
+            await MessageProcessor.Instance.ProcessMessage(msg);
         }
+
+        #endregion
+
+        #region Util
 
         private bool IsAdminMessage(SocketMessage socketMessage)
         {
             return _adminId == socketMessage.Id.ToString();
         }
+
+        #endregion
     }
 }

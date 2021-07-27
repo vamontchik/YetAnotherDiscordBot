@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using DiscordBot.Command.RockPaperScissors;
 
-namespace DiscordBot
+namespace DiscordBot.Command.Stats
 {
     internal class Stat
     {

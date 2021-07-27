@@ -2,21 +2,35 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.WebSocket;
+using DiscordBot.Command;
+using DiscordBot.Command.Empty;
+using DiscordBot.Command.Gremlin;
+using DiscordBot.Command.RockPaperScissors;
+using DiscordBot.Command.Stats;
 
 namespace DiscordBot
 {
     internal class MessageProcessor
     {
-        private readonly HashSet<string> _commands;
+        #region Singleton
 
-        public MessageProcessor()
+        private MessageProcessor()
         {
             _commands = new HashSet<string>
             {
                 "!rps",
-                "!stats"
+                "!stats",
+                "!gremlin"
             };
         }
+        
+        private static readonly Lazy<MessageProcessor> Lazy = new(() => new MessageProcessor());
+
+        public static MessageProcessor Instance => Lazy.Value;
+
+        #endregion
+
+        private readonly HashSet<string> _commands;
 
         public async Task ProcessMessage(Message message)
         {
@@ -29,7 +43,7 @@ namespace DiscordBot
         {
             var contents = socketMessage.Content;
             var split = contents.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return IsValidCommand(split) ? ParseIntoCommand(split, socketMessage) : new EmptyCommand() ;
+            return IsValidCommand(split) ? ParseIntoCommand(split, socketMessage) : new EmptyCommand();
         }
 
         private bool IsValidCommand(IReadOnlyList<string> splitMessageContents)
@@ -41,13 +55,15 @@ namespace DiscordBot
             return _commands.Contains(baseCommand);
         }
 
-        private static ICommand ParseIntoCommand( IReadOnlyList<string> splitMessageContents, SocketMessage socketMessage)
+        private static ICommand ParseIntoCommand(
+            IReadOnlyList<string> splitMessageContents, SocketMessage socketMessage)
         {
             var baseCommand = splitMessageContents[0];
             return baseCommand switch
             {
                 "!rps" => new RockPaperScissorsCommand(splitMessageContents, socketMessage),
                 "!stats" => new StatsCommand(socketMessage),
+                "!gremlin" => new GremlinCommand(socketMessage),
                 _ => new EmptyCommand()
             };
         }

@@ -1,9 +1,10 @@
-﻿using Discord.WebSocket;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Discord.WebSocket;
+using DiscordBot.Command.Stats;
 
-namespace DiscordBot
+namespace DiscordBot.Command.RockPaperScissors
 {
     internal class RockPaperScissorsCommand : ICommand
     {
@@ -26,8 +27,6 @@ namespace DiscordBot
             _destChannel = socketMessage.Channel;
             _user = socketMessage.Author;
             _statsManager = StatsManager.Instance;
-            
-
         }
 
         private static Dictionary<int, RpsType> CreateChoicesDictionary()

@@ -1,7 +1,7 @@
-﻿using Discord.WebSocket;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Discord.WebSocket;
 
-namespace DiscordBot
+namespace DiscordBot.Command.Stats
 {
     internal class StatsCommand : ICommand
     {

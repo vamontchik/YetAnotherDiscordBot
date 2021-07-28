@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.WebSocket;
-using DiscordBot.Command.Stats;
 
 namespace DiscordBot.Command.RockPaperScissors
 {
@@ -11,10 +10,12 @@ namespace DiscordBot.Command.RockPaperScissors
         private readonly Random _rnd;
         private readonly Dictionary<int, RpsType> _choices;
         private readonly Dictionary<string, RpsType> _strChoices;
-        private readonly string _userChoice;
+        private readonly string _arg;
+        private readonly bool _isStatCheck;
         private readonly ISocketMessageChannel _destChannel;
         private readonly SocketUser _user;
         private readonly StatsManager _statsManager;
+        private readonly SocketMessage _socketMessage;
 
         public RockPaperScissorsCommand(IReadOnlyList<string> msgContents, SocketMessage socketMessage)
         {
@@ -22,11 +23,14 @@ namespace DiscordBot.Command.RockPaperScissors
             _choices = CreateChoicesDictionary();
             _strChoices = CreateStrChoicesDictionary();
             
-            _userChoice = msgContents.Count > 1 ? msgContents[1].ToLower() : "";
+            _arg = msgContents.Count > 1 ? msgContents[1].ToLower() : "";
+            _isStatCheck = _arg.Equals("stats");
             
             _destChannel = socketMessage.Channel;
             _user = socketMessage.Author;
             _statsManager = StatsManager.Instance;
+
+            _socketMessage = socketMessage;
         }
 
         private static Dictionary<int, RpsType> CreateChoicesDictionary()
@@ -51,7 +55,9 @@ namespace DiscordBot.Command.RockPaperScissors
 
         public async Task ExecuteAsync()
         {
-            if (!ValidUserChoice())
+            if (_isStatCheck)
+                await new StatsEntryPoint(_socketMessage).DoAsync();
+            else if (!ValidUserChoice())
                 await SendErrorMessageAsync();
             else
                 await DoGameAsync();
@@ -59,7 +65,7 @@ namespace DiscordBot.Command.RockPaperScissors
 
         private bool ValidUserChoice()
         {
-            return _strChoices.ContainsKey(_userChoice);
+            return _strChoices.ContainsKey(_arg);
         }
 
         private async Task SendErrorMessageAsync()
@@ -97,7 +103,7 @@ namespace DiscordBot.Command.RockPaperScissors
 
         private RpsPlayer CreateUserPlayer()
         {
-            var userChoiceAsType = _strChoices[_userChoice];
+            var userChoiceAsType = _strChoices[_arg];
             return new RpsPlayer(userChoiceAsType, _user.Username, _user.Id);
         }
 

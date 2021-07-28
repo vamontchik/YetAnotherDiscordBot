@@ -6,7 +6,6 @@ using DiscordBot.Command;
 using DiscordBot.Command.Empty;
 using DiscordBot.Command.Gremlin;
 using DiscordBot.Command.RockPaperScissors;
-using DiscordBot.Command.Stats;
 
 namespace DiscordBot
 {
@@ -19,7 +18,6 @@ namespace DiscordBot
             _commands = new HashSet<string>
             {
                 "!rps",
-                "!stats",
                 "!gremlin"
             };
         }
@@ -62,7 +60,6 @@ namespace DiscordBot
             return baseCommand switch
             {
                 "!rps" => new RockPaperScissorsCommand(splitMessageContents, socketMessage),
-                "!stats" => new StatsCommand(socketMessage),
                 "!gremlin" => new GremlinCommand(socketMessage),
                 _ => new EmptyCommand()
             };

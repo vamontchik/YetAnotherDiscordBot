@@ -29,11 +29,11 @@ namespace DiscordBot.Command.Gremlin
         
         #endregion
 
-        private readonly object _updateLock = new();
+        private static readonly object UpdateLock = new();
 
         public void Update()
         {
-            lock (_updateLock)
+            lock (UpdateLock)
                 UpdateStats();
         }
 
@@ -47,7 +47,8 @@ namespace DiscordBot.Command.Gremlin
 
         public override string ToString()
         {
-            return $"Gremlin Level {Level}: Attack {Attack}, Defense: {Defense}";
+            lock(UpdateLock)
+                return $"Gremlin Level {Level}: Attack {Attack}, Defense: {Defense}";
         }
     }
 }

@@ -8,6 +8,8 @@ namespace DiscordBot.Command.RockPaperScissors
         private readonly Dictionary<RpsType, int> _winsByType;
         private readonly Dictionary<RpsType, int> _totalByType;
 
+        private static readonly object ReadWriteLock = new();
+
         public Stat()
         {
             _winsByType = new Dictionary<RpsType, int>
@@ -27,29 +29,34 @@ namespace DiscordBot.Command.RockPaperScissors
 
         public void Update(RpsType rpsType, StatResultType statType)
         {
-            _totalByType[rpsType] += 1;
-            
-            if (statType == StatResultType.Win)
+            lock (ReadWriteLock)
             {
-                _winsByType[rpsType] += 1;
+                _totalByType[rpsType] += 1;
+                if (statType == StatResultType.Win)
+                {
+                    _winsByType[rpsType] += 1;
+                }
             }
         }
 
         public string ComputeStats()
         {
-            var res = "";
-            var types = Enum.GetValues(typeof(RpsType));
-
-            foreach (RpsType t in types)
+            lock (ReadWriteLock)
             {
-                var winsForType = _winsByType[t];
-                var totalForType = _totalByType[t];
-                var percentage = CalculatePercent(winsForType, totalForType);
-                res += $"{t} : {winsForType} wins, {totalForType} games, {percentage}% win rate";
-                res += Environment.NewLine;
-            }
+                var res = "";
+                var types = Enum.GetValues(typeof(RpsType));
+
+                foreach (RpsType t in types)
+                {
+                    var winsForType = _winsByType[t];
+                    var totalForType = _totalByType[t];
+                    var percentage = CalculatePercent(winsForType, totalForType);
+                    res += $"{t} : {winsForType} wins, {totalForType} games, {percentage}% win rate";
+                    res += Environment.NewLine;
+                }
             
-            return res;
+                return res;
+            }
         }
 
         private static int CalculatePercent(int wins, int total)

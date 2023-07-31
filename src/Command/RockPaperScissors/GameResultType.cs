@@ -1,7 +1,8 @@
-﻿namespace DiscordBot.Command.RockPaperScissors
+﻿namespace DiscordBot.Command.RockPaperScissors;
+
+internal enum GameResultType
 {
-    internal enum GameResultType
-    {
-        P1, P2, Tie
-    }
+    P1,
+    P2,
+    Tie
 }

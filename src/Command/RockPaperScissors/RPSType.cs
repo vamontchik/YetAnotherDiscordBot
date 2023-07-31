@@ -1,4 +1,8 @@
-﻿namespace DiscordBot.Command.RockPaperScissors
+﻿namespace DiscordBot.Command.RockPaperScissors;
+
+internal enum RpsType
 {
-    internal enum RpsType { Rock, Paper, Scissors }
+    Rock,
+    Paper,
+    Scissors
 }

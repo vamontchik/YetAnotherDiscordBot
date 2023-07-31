@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordBot;
 
-internal class Program
+internal sealed class Program
 {
     private readonly DiscordSocketClient _client;
     private readonly string _adminId;

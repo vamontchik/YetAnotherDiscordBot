@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DiscordBot.Command.RockPaperScissors;
 
-internal class Stat
+internal sealed class Stat
 {
     private readonly Dictionary<RpsType, int> _winsByType;
     private readonly Dictionary<RpsType, int> _totalByType;

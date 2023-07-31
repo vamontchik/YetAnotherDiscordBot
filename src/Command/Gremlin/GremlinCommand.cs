@@ -3,7 +3,7 @@ using Discord.WebSocket;
 
 namespace DiscordBot.Command.Gremlin;
 
-internal class GremlinCommand : ICommand
+internal sealed class GremlinCommand : ICommand
 {
     private readonly ISocketMessageChannel _destChannel;
 

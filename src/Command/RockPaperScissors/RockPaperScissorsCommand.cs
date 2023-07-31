@@ -5,7 +5,7 @@ using Discord.WebSocket;
 
 namespace DiscordBot.Command.RockPaperScissors;
 
-internal class RockPaperScissorsCommand : ICommand
+internal sealed class RockPaperScissorsCommand : ICommand
 {
     private readonly Random _rnd;
     private readonly Dictionary<int, RpsType> _choices;

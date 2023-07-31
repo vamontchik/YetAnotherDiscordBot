@@ -2,7 +2,7 @@
 
 namespace DiscordBot.Command.Gremlin;
 
-internal class Gremlin
+internal sealed class Gremlin
 {
     private Gremlin()
     {

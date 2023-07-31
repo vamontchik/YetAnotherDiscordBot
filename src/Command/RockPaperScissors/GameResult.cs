@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Command.RockPaperScissors;
 
-internal class GameResult
+internal sealed class GameResult
 {
     private readonly GameResultType _winType;
 

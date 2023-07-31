@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DiscordBot.Command.RockPaperScissors;
 
-internal class StatsManager
+internal sealed class StatsManager
 {
     private StatsManager()
     {

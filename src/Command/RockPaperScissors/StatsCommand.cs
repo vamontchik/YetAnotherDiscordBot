@@ -3,7 +3,7 @@ using Discord.WebSocket;
 
 namespace DiscordBot.Command.RockPaperScissors;
 
-internal class StatsEntryPoint
+internal sealed class StatsEntryPoint
 {
     private readonly ISocketMessageChannel _destChannel;
     private readonly ulong _userId;

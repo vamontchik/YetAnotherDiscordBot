@@ -1,7 +1,8 @@
-﻿namespace DiscordBot.Command.RockPaperScissors
+﻿namespace DiscordBot.Command.RockPaperScissors;
+
+internal enum StatResultType
 {
-    internal enum StatResultType
-    {
-        Win, Loss, Tie
-    }
+    Win,
+    Loss,
+    Tie
 }

@@ -1,12 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace DiscordBot.Command.Empty
+namespace DiscordBot.Command.Empty;
+
+internal class EmptyCommand : ICommand
 {
-    internal class EmptyCommand : ICommand
-    {
-        public Task ExecuteAsync()
-        {
-            return Task.CompletedTask;
-        }
-    }
+    public Task ExecuteAsync() => Task.CompletedTask;
 }

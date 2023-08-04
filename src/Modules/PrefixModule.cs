@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using DiscordBot.Modules.RockPaperScissors;
@@ -22,9 +24,20 @@ public class PrefixModule : ModuleBase<SocketCommandContext>
     }
 
     [Command("rps")]
-    public async Task HandleRpsCommand(string choice)
+    public async Task HandleRpsCommand([Remainder] string choice)
     {
-        var rpsCommand = new RockPaperScissorsCommand(choice, Context, StatsManager);
+        var userEnteredValues = choice
+            .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
+
+        if (userEnteredValues.Count > 1)
+        {
+            await Context.Message.ReplyAsync("Please specify only one argument");
+            return;
+        }
+
+        var rpsCommand = new RockPaperScissorsCommand(userEnteredValues.First(), Context, StatsManager);
+
         await rpsCommand.ExecuteAsync();
     }
 }

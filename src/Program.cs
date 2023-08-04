@@ -6,6 +6,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using DiscordBot.Handler;
 using DiscordBot.Modules;
+using DiscordBot.Modules.RockPaperScissors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Yaml;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,14 +38,20 @@ internal static class Program
                     LogLevel = LogSeverity.Debug
                 }))
                 .AddSingleton(serviceProvider =>
-                    new InteractionService(serviceProvider.GetRequiredService<DiscordSocketClient>()))
+                    new InteractionService(
+                        serviceProvider.GetRequiredService<DiscordSocketClient>(),
+                        new InteractionServiceConfig
+                        {
+                            LogLevel = LogSeverity.Debug
+                        }))
                 .AddSingleton<InteractionHandler>()
                 .AddSingleton(_ => new CommandService(new CommandServiceConfig
                 {
                     LogLevel = LogSeverity.Debug,
                     DefaultRunMode = RunMode.Async
                 }))
-                .AddSingleton<PrefixHandler>())
+                .AddSingleton<PrefixHandler>()
+                .AddSingleton<StatsManager>())
             .Build();
 
         await RunAsync(host);

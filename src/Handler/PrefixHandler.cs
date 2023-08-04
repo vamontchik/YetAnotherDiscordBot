@@ -31,22 +31,29 @@ internal class PrefixHandler
 
     private async Task HandleCommandAsync(SocketMessage socketMessage)
     {
-        if (socketMessage is not SocketUserMessage socketUserMessage) 
-            return;
+        try
+        {
+            if (socketMessage is not SocketUserMessage socketUserMessage)
+                return;
 
-        var argumentPosition = 0;
-        
-        var hasCharPrefix = socketUserMessage.HasCharPrefix(_configuration["prefix"]![0], ref argumentPosition);
-        var mentionsBot = socketUserMessage.HasMentionPrefix(_client.CurrentUser, ref argumentPosition);
-        if (!hasCharPrefix && !mentionsBot)
-            return;
+            var argumentPosition = 0;
 
-        var authorIsBot = socketUserMessage.Author.IsBot;
-        if (authorIsBot)
-            return;
+            var hasCharPrefix = socketUserMessage.HasCharPrefix(_configuration["prefix"]![0], ref argumentPosition);
+            var mentionsBot = socketUserMessage.HasMentionPrefix(_client.CurrentUser, ref argumentPosition);
+            if (!hasCharPrefix && !mentionsBot)
+                return;
 
-        var context = new SocketCommandContext(_client, socketUserMessage);
+            var authorIsBot = socketUserMessage.Author.IsBot;
+            if (authorIsBot)
+                return;
 
-        await _commands.ExecuteAsync(context, argumentPosition, _services);
+            var context = new SocketCommandContext(_client, socketUserMessage);
+
+            await _commands.ExecuteAsync(context, argumentPosition, _services);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 }

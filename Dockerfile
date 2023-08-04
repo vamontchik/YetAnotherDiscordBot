@@ -15,7 +15,7 @@ COPY config.yml ./
 RUN apt-get update -y && apt-get upgrade -y
 RUN apt-get install -y python3
 RUN apt-get install -y libopus0 libopus-dev
-RUN apt-get install -y curl build-essential unzip locate
+RUN apt-get install -y curl
 RUN apt-get install -y ffmpeg
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
 RUN chmod a+rx /usr/local/bin/yt-dlp

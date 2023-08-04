@@ -11,15 +11,15 @@ namespace DiscordBot.Modules.Audio;
 
 public class AudioService
 {
-    private readonly ConcurrentDictionary<ulong, IAudioClient> _connectedChannels = new();
+    private readonly ConcurrentDictionary<ulong, IAudioClient> _connectedAudioClients = new();
 
-    private readonly ConcurrentDictionary<ulong, Process> _connectedProcesses = new();
-    private readonly ConcurrentDictionary<ulong, Stream> _connectedStreams = new();
-    private readonly ConcurrentDictionary<ulong, AudioOutStream> _connectedAudioOutStreams = new();
+    private readonly ConcurrentDictionary<ulong, Process> _connectedFfmpegProcesses = new();
+    private readonly ConcurrentDictionary<ulong, Stream> _connectedFfmpegStreams = new();
+    private readonly ConcurrentDictionary<ulong, AudioOutStream> _connectedPcmStreams = new();
 
     public async Task JoinAudioAsync(IGuild guild, IVoiceChannel target)
     {
-        if (_connectedChannels.TryGetValue(guild.Id, out _))
+        if (_connectedAudioClients.TryGetValue(guild.Id, out _))
         {
             Console.WriteLine("Bot already is in a channel in this guild!");
             return;
@@ -40,7 +40,7 @@ public class AudioService
 
         try
         {
-            _connectedChannels[guild.Id] = audioClient;
+            _connectedAudioClients[guild.Id] = audioClient;
             Console.WriteLine($"Connected to voice on {guild.Name}.");
         }
         catch (Exception e)
@@ -51,7 +51,7 @@ public class AudioService
 
     public async Task LeaveAudioAsync(IGuild guild)
     {
-        if (!_connectedChannels.ContainsKey(guild.Id))
+        if (!_connectedAudioClients.ContainsKey(guild.Id))
         {
             Console.WriteLine("Tried to remove bot from a guild where it is not connected to any voice channel");
             return;
@@ -70,16 +70,16 @@ public class AudioService
 
     private async Task ExitWithDisposingAll(IGuild guild)
     {
-        _connectedProcesses.Remove(guild.Id, out var ffmpegProcess);
+        _connectedFfmpegProcesses.Remove(guild.Id, out var ffmpegProcess);
         ffmpegProcess?.Dispose();
 
-        _connectedStreams.Remove(guild.Id, out var ffmpegStream);
+        _connectedFfmpegStreams.Remove(guild.Id, out var ffmpegStream);
         ffmpegStream?.Dispose();
 
-        _connectedAudioOutStreams.Remove(guild.Id, out var pcmStream);
+        _connectedPcmStreams.Remove(guild.Id, out var pcmStream);
         pcmStream?.Dispose();
 
-        _connectedChannels.Remove(guild.Id, out var client);
+        _connectedAudioClients.Remove(guild.Id, out var client);
         await (client?.StopAsync() ?? Task.CompletedTask);
         await (await guild.GetCurrentUserAsync()).ModifyAsync(x => x.Channel = null); // ???
         client?.Dispose();
@@ -87,7 +87,7 @@ public class AudioService
 
     public async Task SendAudioAsync(IGuild guild, string url)
     {
-        if (_connectedChannels.TryGetValue(guild.Id, out var client))
+        if (_connectedAudioClients.TryGetValue(guild.Id, out var client))
         {
             try
             {
@@ -123,8 +123,8 @@ public class AudioService
                 return;
             }
 
-            _connectedProcesses[guild.Id] = ffmpegProcess;
-            _connectedStreams[guild.Id] = ffmpegStream;
+            _connectedFfmpegProcesses[guild.Id] = ffmpegProcess;
+            _connectedFfmpegStreams[guild.Id] = ffmpegStream;
 
             Console.WriteLine($"Creating pcm stream of {url} in {guild.Name}");
             AudioOutStream pcmStream;
@@ -138,7 +138,7 @@ public class AudioService
                 return;
             }
 
-            _connectedAudioOutStreams[guild.Id] = pcmStream;
+            _connectedPcmStreams[guild.Id] = pcmStream;
 
             try
             {

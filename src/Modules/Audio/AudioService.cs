@@ -74,104 +74,163 @@ public class AudioService
     {
         if (_connectedChannels.TryGetValue(guild.Id, out var client))
         {
-            try
+            if (!await DownloadMusicFileAsync(url))
+                return;
+
+            if (!CreateFfmpegStream(url, guild.Name, out var process, out var output))
+                return;
+            if (process is null || output is null)
             {
-                await DownloadMusicFileAsync(url);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
+                Console.WriteLine("unable to create ffmpeg stream: `process` or `output` is null");
                 return;
             }
 
-            Console.WriteLine($"Creating ffmpeg stream of {url} in {guild.Name}");
-            Process process;
-            Stream output;
-            try
+            if (CreatePcmStream(url, guild.Name, client, out var stream))
+                return;
+            if (stream is null)
             {
-                var createdProcess = CreateStream();
-
-                if (createdProcess is null)
-                {
-                    Console.WriteLine("created stream for output was null");
-                    return;
-                }
-
-                var baseStream = createdProcess.StandardOutput.BaseStream;
-
-                process = createdProcess;
-                output = baseStream;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
+                Console.WriteLine("unable to create pcm stream: `stream` is null");
                 return;
             }
 
-            Console.WriteLine($"Creating pcm stream of {url} in {guild.Name}");
-            AudioOutStream stream;
+            await SendMusic(guild, url, output, stream);
+
+            await DisposeStreamsAndProcesses(stream, output, process);
+        }
+    }
+
+    private static async Task DisposeStreamsAndProcesses(
+        AudioOutStream stream,
+        Stream output,
+        Process process)
+    {
+        Console.WriteLine("Disposing of all streams");
+        try
+        {
+            await stream.DisposeAsync();
+            await output.DisposeAsync();
+            process.Dispose();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("failed to dispose of all streams");
+            Console.WriteLine(e);
+        }
+    }
+
+    private static async Task SendMusic(
+        IGuild guild,
+        string url,
+        Stream output,
+        AudioOutStream stream)
+    {
+        try
+        {
+            Console.WriteLine($"Copying music bytes to ffmpeg stream for {url} in {guild.Name}");
+            await output.CopyToAsync(stream);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            Console.WriteLine($"Flushing final bytes to ffmpeg stream for {url} in {guild.Name}");
             try
             {
-                stream = client.CreatePCMStream(AudioApplication.Mixed);
+                await stream.FlushAsync();
             }
             catch (Exception e)
             {
+                Console.WriteLine("failed to flush final bytes");
                 Console.WriteLine(e);
-                return;
-            }
-
-            try
-            {
-                Console.WriteLine($"Copying music bytes to ffmpeg stream for {url} in {guild.Name}");
-                await output.CopyToAsync(stream);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-            finally
-            {
-                Console.WriteLine($"Flushing final bytes to ffmpeg stream for {url} in {guild.Name}");
-                try
-                {
-                    await stream.FlushAsync();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("failed to flush final bytes");
-                    Console.WriteLine(e);
-                }
-
-                Console.WriteLine("Disposing of ffmpeg steam");
-                try
-                {
-                    await stream.DisposeAsync();
-                    await output.DisposeAsync();
-                    process.Dispose();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("failed to dispose of all streams");
-                    Console.WriteLine(e);
-                }
             }
         }
     }
 
-    private static async Task DownloadMusicFileAsync(string url)
+    private static bool CreatePcmStream(
+        string url,
+        string guildName,
+        IAudioClient client,
+        out AudioOutStream? stream)
     {
-        var startInfo = new ProcessStartInfo
+        Console.WriteLine($"Creating pcm stream of {url} in {guildName}");
+
+        stream = null;
+
+        try
         {
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            FileName = "yt-dlp",
-            WindowStyle = ProcessWindowStyle.Hidden,
-            Arguments = $"--extract-audio --audio-format wav {url} -o test"
-        };
-        using var process = Process.Start(startInfo);
-        if (process is null)
-            throw new Exception("unable to create process for ffmpeg");
-        await process.WaitForExitAsync();
+            stream = client.CreatePCMStream(AudioApplication.Mixed);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool CreateFfmpegStream(
+        string url,
+        string guildName,
+        out Process? process,
+        out Stream? output)
+    {
+        Console.WriteLine($"Creating ffmpeg stream of {url} in {guildName}");
+
+        process = null;
+        output = null;
+
+        try
+        {
+            var createdProcess = CreateStream();
+
+            if (createdProcess is null)
+            {
+                Console.WriteLine("created stream for output was null");
+                return false;
+            }
+
+            var baseStream = createdProcess.StandardOutput.BaseStream;
+
+            process = createdProcess;
+            output = baseStream;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static async Task<bool> DownloadMusicFileAsync(string url)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                FileName = "yt-dlp",
+                WindowStyle = ProcessWindowStyle.Hidden,
+                Arguments = $"--extract-audio --audio-format wav {url} -o test"
+            };
+            using var process = Process.Start(startInfo);
+            if (process is null)
+                throw new Exception("unable to create process for ffmpeg");
+            await process.WaitForExitAsync();
+            process.Dispose();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+
+        return true;
     }
 
     private static Process? CreateStream()

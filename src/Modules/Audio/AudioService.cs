@@ -16,7 +16,10 @@ public class AudioService
     public async Task JoinAudioAsync(IGuild guild, IVoiceChannel target)
     {
         if (_connectedChannels.TryGetValue(guild.Id, out _))
+        {
+            Console.WriteLine("Bot already is in a channel in this guild!");
             return;
+        }
 
         IAudioClient? audioClient = null;
         try
@@ -129,11 +132,28 @@ public class AudioService
             finally
             {
                 Console.WriteLine($"Flushing final bytes to ffmpeg stream for {url} in {guild.Name}");
-                await stream.FlushAsync();
-                Console.WriteLine("Disposing various processes and streams");
-                await stream.DisposeAsync();
-                await output.DisposeAsync();
-                process.Dispose();
+                try
+                {
+                    await stream.FlushAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("failed to flush final bytes");
+                    Console.WriteLine(e);
+                }
+
+                Console.WriteLine("Disposing of ffmpeg steam");
+                try
+                {
+                    await stream.DisposeAsync();
+                    await output.DisposeAsync();
+                    process.Dispose();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("failed to dispose of all streams");
+                    Console.WriteLine(e);
+                }
             }
         }
     }

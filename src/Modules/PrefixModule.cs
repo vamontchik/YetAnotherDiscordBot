@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using DiscordBot.Modules.Audio;
 using DiscordBot.Modules.RockPaperScissors;
 
 namespace DiscordBot.Modules;
@@ -10,6 +11,7 @@ namespace DiscordBot.Modules;
 public class PrefixModule : ModuleBase<SocketCommandContext>
 {
     public StatsManager StatsManager { get; set; }
+    public AudioService AudioService { get; set; }
 
     [Command("ping")]
     public async Task HandlePingCommand()
@@ -39,5 +41,38 @@ public class PrefixModule : ModuleBase<SocketCommandContext>
         var rpsCommand = new RockPaperScissorsCommand(userEnteredValues.First(), Context, StatsManager);
 
         await rpsCommand.ExecuteAsync();
+    }
+
+    [Command("join")]
+    public async Task HandleJoinCommand()
+    {
+        var voiceChannel = (Context.User as IGuildUser)?.VoiceChannel;
+        
+        if (voiceChannel is null)
+        {
+            await Context.Message.ReplyAsync("Please join a voice channel first");
+            return;
+        }
+        
+        await AudioService.JoinAudioAsync(Context.Guild, voiceChannel);
+    }
+
+    [Command("leave")]
+    public async Task HandleLeaveCommand() => await AudioService.LeaveAudioAsync(Context.Guild);
+
+    [Command("play")]
+    public async Task HandlePlayCommand([Remainder] string url)
+    {
+        var userEnteredValues = url
+            .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
+
+        if (userEnteredValues.Count > 1)
+        {
+            await Context.Message.ReplyAsync("Please specify only one url");
+            return;
+        }
+
+        await AudioService.SendAudioAsync(Context.Guild, url);
     }
 }

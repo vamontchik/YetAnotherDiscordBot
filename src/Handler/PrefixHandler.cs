@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
@@ -10,20 +11,23 @@ internal class PrefixHandler
     private readonly DiscordSocketClient _client;
     private readonly CommandService _commands;
     private readonly IConfigurationRoot _configuration;
+    private readonly IServiceProvider _services;
     
     public PrefixHandler(
         DiscordSocketClient client,
         CommandService commands,
-        IConfigurationRoot configuration)
+        IConfigurationRoot configuration,
+        IServiceProvider services)
     {
         _client = client;
         _commands = commands;
         _configuration = configuration;
+        _services = services;
     }
 
     public void Initialize() => _client.MessageReceived += HandleCommandAsync;
 
-    public void AddModule<T>() => _commands.AddModuleAsync<T>(null);
+    public void AddModule<T>() => _commands.AddModuleAsync<T>(_services);
 
     private async Task HandleCommandAsync(SocketMessage socketMessage)
     {
@@ -43,6 +47,6 @@ internal class PrefixHandler
 
         var context = new SocketCommandContext(_client, socketUserMessage);
 
-        await _commands.ExecuteAsync(context, argumentPosition, services: null);
+        await _commands.ExecuteAsync(context, argumentPosition, _services);
     }
 }

@@ -21,7 +21,7 @@ public class AudioService
     {
         if (_connectedAudioClients.TryGetValue(guild.Id, out _))
         {
-            Console.WriteLine("Bot already is in a channel in this guild!");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Bot already is in a channel in this guild!");
             return;
         }
 
@@ -41,7 +41,7 @@ public class AudioService
         try
         {
             _connectedAudioClients[guild.Id] = audioClient;
-            Console.WriteLine($"Connected to voice on {guild.Name}.");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), $"Connected to voice on {guild.Name}.");
         }
         catch (Exception e)
         {
@@ -53,14 +53,16 @@ public class AudioService
     {
         if (!_connectedAudioClients.ContainsKey(guild.Id))
         {
-            Console.WriteLine("Tried to remove bot from a guild where it is not connected to any voice channel");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(),
+                "Tried to remove bot from a guild where it is not connected to any voice channel");
             return;
         }
 
         try
         {
             await ExitWithDisposingAll(guild);
-            Console.WriteLine($"Disconnected from voice on {guild.Name} and disposed of all streams");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(),
+                $"Disconnected from voice on {guild.Name} and disposed of all streams");
         }
         catch (Exception e)
         {
@@ -99,7 +101,7 @@ public class AudioService
                 return;
             }
 
-            Console.WriteLine($"Creating ffmpeg stream of {url} in {guild.Name}");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), $"Creating ffmpeg stream of {url} in {guild.Name}");
             Process ffmpegProcess;
             Stream ffmpegStream;
             try
@@ -108,7 +110,7 @@ public class AudioService
 
                 if (createdProcess is null)
                 {
-                    Console.WriteLine("created stream for output was null");
+                    PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Created stream for output was null");
                     return;
                 }
 
@@ -126,7 +128,7 @@ public class AudioService
             _connectedFfmpegProcesses[guild.Id] = ffmpegProcess;
             _connectedFfmpegStreams[guild.Id] = ffmpegStream;
 
-            Console.WriteLine($"Creating pcm stream of {url} in {guild.Name}");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), $"Creating pcm stream of {url} in {guild.Name}");
             AudioOutStream pcmStream;
             try
             {
@@ -142,7 +144,8 @@ public class AudioService
 
             try
             {
-                Console.WriteLine($"Copying music bytes to pcm stream for {url} in {guild.Name}");
+                PrintWithGuildInfo(guild.Name, guild.Id.ToString(),
+                    $"Copying music bytes to pcm stream for {url} in {guild.Name}");
                 await ffmpegStream.CopyToAsync(pcmStream);
             }
             catch (Exception e)
@@ -151,14 +154,15 @@ public class AudioService
             }
             finally
             {
-                Console.WriteLine($"Flushing final bytes to pcm stream for {url} in {guild.Name}");
+                PrintWithGuildInfo(guild.Name, guild.Id.ToString(),
+                    $"Flushing final bytes to pcm stream for {url} in {guild.Name}");
                 try
                 {
                     await pcmStream.FlushAsync();
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("failed to flush final bytes");
+                    PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Failed to flush final bytes");
                     Console.WriteLine(e);
                 }
             }
@@ -194,4 +198,7 @@ public class AudioService
         };
         return Process.Start(startInfo);
     }
+
+    private static void PrintWithGuildInfo(string guildName, string guildId, string message) =>
+        Console.WriteLine($"[{guildName}:{guildId}] {message}");
 }

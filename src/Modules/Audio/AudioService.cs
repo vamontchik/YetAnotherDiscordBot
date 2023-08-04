@@ -13,6 +13,10 @@ public class AudioService
 {
     private readonly ConcurrentDictionary<ulong, IAudioClient> _connectedChannels = new();
 
+    private readonly ConcurrentDictionary<ulong, Process> _connectedProcesses = new();
+    private readonly ConcurrentDictionary<ulong, Stream> _connectedStreams = new();
+    private readonly ConcurrentDictionary<ulong, AudioOutStream> _connectedAudioOutStreams = new();
+
     public async Task JoinAudioAsync(IGuild guild, IVoiceChannel target)
     {
         if (_connectedChannels.TryGetValue(guild.Id, out _))
@@ -53,21 +57,32 @@ public class AudioService
             return;
         }
 
-        var client = _connectedChannels[guild.Id];
-
         try
         {
-            await client.StopAsync();
-            await (await guild.GetCurrentUserAsync()).ModifyAsync(x => x.Channel = null); // ???
-            client.Dispose();
-            Console.WriteLine($"Disconnected from voice on {guild.Name}.");
+            await ExitWithDisposingAll(guild);
+            Console.WriteLine($"Disconnected from voice on {guild.Name} and disposed of all streams");
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
+    }
 
-        _connectedChannels.Remove(guild.Id, out _);
+    private async Task ExitWithDisposingAll(IGuild guild)
+    {
+        _connectedProcesses.Remove(guild.Id, out var ffmpegProcess);
+        ffmpegProcess?.Dispose();
+
+        _connectedStreams.Remove(guild.Id, out var ffmpegStream);
+        ffmpegStream?.Dispose();
+
+        _connectedAudioOutStreams.Remove(guild.Id, out var pcmStream);
+        pcmStream?.Dispose();
+
+        _connectedChannels.Remove(guild.Id, out var client);
+        await (client?.StopAsync() ?? Task.CompletedTask);
+        await (await guild.GetCurrentUserAsync()).ModifyAsync(x => x.Channel = null); // ???
+        client?.Dispose();
     }
 
     public async Task SendAudioAsync(IGuild guild, string url)
@@ -85,8 +100,8 @@ public class AudioService
             }
 
             Console.WriteLine($"Creating ffmpeg stream of {url} in {guild.Name}");
-            Process process;
-            Stream output;
+            Process ffmpegProcess;
+            Stream ffmpegStream;
             try
             {
                 var createdProcess = CreateStream();
@@ -99,20 +114,23 @@ public class AudioService
 
                 var baseStream = createdProcess.StandardOutput.BaseStream;
 
-                process = createdProcess;
-                output = baseStream;
+                ffmpegProcess = createdProcess;
+                ffmpegStream = baseStream;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 return;
             }
+
+            _connectedProcesses[guild.Id] = ffmpegProcess;
+            _connectedStreams[guild.Id] = ffmpegStream;
 
             Console.WriteLine($"Creating pcm stream of {url} in {guild.Name}");
-            AudioOutStream stream;
+            AudioOutStream pcmStream;
             try
             {
-                stream = client.CreatePCMStream(AudioApplication.Mixed);
+                pcmStream = client.CreatePCMStream(AudioApplication.Mixed);
             }
             catch (Exception e)
             {
@@ -120,10 +138,12 @@ public class AudioService
                 return;
             }
 
+            _connectedAudioOutStreams[guild.Id] = pcmStream;
+
             try
             {
-                Console.WriteLine($"Copying music bytes to ffmpeg stream for {url} in {guild.Name}");
-                await output.CopyToAsync(stream);
+                Console.WriteLine($"Copying music bytes to pcm stream for {url} in {guild.Name}");
+                await ffmpegStream.CopyToAsync(pcmStream);
             }
             catch (Exception e)
             {
@@ -131,27 +151,14 @@ public class AudioService
             }
             finally
             {
-                Console.WriteLine($"Flushing final bytes to ffmpeg stream for {url} in {guild.Name}");
+                Console.WriteLine($"Flushing final bytes to pcm stream for {url} in {guild.Name}");
                 try
                 {
-                    await stream.FlushAsync();
+                    await pcmStream.FlushAsync();
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine("failed to flush final bytes");
-                    Console.WriteLine(e);
-                }
-
-                Console.WriteLine("Disposing of ffmpeg steam");
-                try
-                {
-                    await stream.DisposeAsync();
-                    await output.DisposeAsync();
-                    process.Dispose();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("failed to dispose of all streams");
                     Console.WriteLine(e);
                 }
             }

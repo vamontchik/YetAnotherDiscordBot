@@ -6,12 +6,12 @@ using Discord.Commands;
 using Discord.Interactions;
 using DiscordBot.Handler;
 using DiscordBot.Modules;
+using DiscordBot.Modules.Audio;
 using DiscordBot.Modules.RockPaperScissors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Yaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using RunMode = Discord.Commands.RunMode;
 
 namespace DiscordBot;
 
@@ -42,16 +42,19 @@ internal static class Program
                         serviceProvider.GetRequiredService<DiscordSocketClient>(),
                         new InteractionServiceConfig
                         {
-                            LogLevel = LogSeverity.Debug
+                            LogLevel = LogSeverity.Debug,
+                            DefaultRunMode = Discord.Interactions.RunMode.Async
                         }))
                 .AddSingleton<InteractionHandler>()
                 .AddSingleton(_ => new CommandService(new CommandServiceConfig
                 {
                     LogLevel = LogSeverity.Debug,
-                    DefaultRunMode = RunMode.Async
+                    DefaultRunMode = Discord.Commands.RunMode.Async
                 }))
                 .AddSingleton<PrefixHandler>()
-                .AddSingleton<StatsManager>())
+                .AddSingleton<StatsManager>()
+                .AddSingleton<AudioService>()
+            )
             .Build();
 
         await RunAsync(host);

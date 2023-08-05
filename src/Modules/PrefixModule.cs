@@ -14,16 +14,10 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
     public AudioService AudioService { get; set; }
 
     [Command("ping")]
-    public async Task HandlePingCommand()
-    {
-        await Context.Message.ReplyAsync("pong");
-    }
+    public async Task HandlePingCommand() => await Context.Message.ReplyAsync("pong");
 
     [Command("rps")]
-    public async Task HandleRpsCommandNoArg()
-    {
-        await Context.Message.ReplyAsync("Please specify an argument");
-    }
+    public async Task HandleRpsCommandNoArg() => await Context.Message.ReplyAsync("Please specify an argument");
 
     [Command("rps")]
     public async Task HandleRpsCommand([Remainder] string choice)
@@ -66,6 +60,9 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
     }
 
     [Command("play")]
+    public async Task HandlePlayCommandNoArg() => await Context.Message.ReplyAsync("Please specify a url");
+
+    [Command("play")]
     public async Task HandlePlayCommand([Remainder] string url)
     {
         var userEnteredValues = url
@@ -80,5 +77,12 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
 
         if (!await AudioService.SendAudioAsync(Context.Guild, url))
             await Context.Message.ReplyAsync("Something went wrong while playing the song");
+    }
+
+    [Command("skip")]
+    public async Task HandleSkipCommand()
+    {
+        if (!await AudioService.SkipAudioAsync(Context.Guild))
+            await Context.Message.ReplyAsync("Something went wrong when skipping the current song");
     }
 }

@@ -1,71 +1,101 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using System;
-using System.IO;
 using System.Threading.Tasks;
+using Discord.Commands;
+using Discord.Interactions;
+using DiscordBot.Handler;
+using DiscordBot.Modules;
+using DiscordBot.Modules.Audio;
+using DiscordBot.Modules.RockPaperScissors;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Yaml;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace DiscordBot;
 
-internal sealed class Program
+internal static class Program
 {
-    private readonly DiscordSocketClient _client;
-    private readonly string _adminId;
-    private readonly string _token;
-    private const int MessageCacheSize = 100;
+    public static async Task Main() => await MainAsync();
 
-    public static async Task Main() => await new Program().StartupAsync();
-
-    private Program()
+    private static async Task MainAsync()
     {
-        _token = ReadTokenFile();
-        _adminId = ReadAdminIdFile();
-        _client = CreateDiscordSocketClient();
-        SubscribeEventHandlers();
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddYamlFile("config.yml")
+            .Build();
+
+        using var host = Host
+            .CreateDefaultBuilder()
+            .ConfigureServices((_, services) => services
+                .AddSingleton(config)
+                .AddSingleton(_ => new DiscordSocketClient(new DiscordSocketConfig
+                {
+                    GatewayIntents = GatewayIntents.All,
+                    AlwaysDownloadUsers = true, // TODO: is this necessary ?
+                    MessageCacheSize = 100,
+                    LogLevel = LogSeverity.Info
+                }))
+                .AddSingleton(serviceProvider =>
+                    new InteractionService(
+                        serviceProvider.GetRequiredService<DiscordSocketClient>(),
+                        new InteractionServiceConfig
+                        {
+                            LogLevel = LogSeverity.Info,
+                            DefaultRunMode = Discord.Interactions.RunMode.Async
+                        }))
+                .AddSingleton<InteractionHandler>()
+                .AddSingleton(_ => new CommandService(new CommandServiceConfig
+                {
+                    LogLevel = LogSeverity.Info,
+                    DefaultRunMode = Discord.Commands.RunMode.Async
+                }))
+                .AddSingleton<PrefixHandler>()
+                .AddSingleton<StatsManager>()
+                .AddSingleton<AudioService>()
+                .AddSingleton<AudioStore>()
+                .AddSingleton<AudioConnector>()
+                .AddSingleton<AudioDisposer>()
+            )
+            .Build();
+
+        await RunAsync(host);
     }
 
-    // for local runs:
-    // @"<full-path-to>\token.txt"
-    // for docker builds:
-    // "token.txt"
-    private static string ReadTokenFile() => File.ReadAllText("token.txt");
+    private static async Task RunAsync(IHost host)
+    {
+        using var serviceScope = host.Services.CreateScope();
+        var provider = serviceScope.ServiceProvider;
 
-    // for local runs:
-    // @"<full-path-to>\admin_id.txt"
-    // for docker builds:
-    // "admin_id.txt"
-    private static string ReadAdminIdFile() => File.ReadAllText("admin_id.txt");
+        var client = provider.GetRequiredService<DiscordSocketClient>();
 
-    private static DiscordSocketClient CreateDiscordSocketClient() =>
-        new(new DiscordSocketConfig
+        var slashCommands = provider.GetRequiredService<InteractionService>();
+        var interactionHandler = provider.GetRequiredService<InteractionHandler>();
+        await interactionHandler.InitializeAsync();
+
+        var config = provider.GetRequiredService<IConfigurationRoot>();
+
+        var prefixCommands = provider.GetRequiredService<PrefixHandler>();
+        prefixCommands.AddModule<PrefixModule>();
+        prefixCommands.Initialize();
+
+        client.Log += msg =>
         {
-            MessageCacheSize = MessageCacheSize,
-            GatewayIntents = GatewayIntents.All
-        });
+            Console.WriteLine(msg.Message);
+            return Task.CompletedTask;
+        };
+        slashCommands.Log += msg =>
+        {
+            Console.WriteLine(msg.Message);
+            return Task.CompletedTask;
+        };
+        client.Ready += async () => await slashCommands.RegisterCommandsGloballyAsync();
 
-    private void SubscribeEventHandlers()
-    {
-        _client.Log += OnLogMessageEvent;
-        _client.MessageReceived += OnMessageReceived;
-    }
+        await client.LoginAsync(TokenType.Bot, config["token"]);
 
-    private async Task StartupAsync()
-    {
-        await _client.LoginAsync(TokenType.Bot, _token);
-        await _client.StartAsync();
+        await client.StartAsync();
+
         await Task.Delay(-1);
     }
-
-    private static Task OnLogMessageEvent(LogMessage msg)
-    {
-        Console.WriteLine(msg.ToString());
-        return Task.CompletedTask;
-    }
-
-    private async Task OnMessageReceived(SocketMessage socketMessage)
-    {
-        var msg = new Message(socketMessage, IsAdminMessage(socketMessage));
-        await MessageProcessor.Instance.ProcessMessage(msg);
-    }
-
-    private bool IsAdminMessage(SocketMessage socketMessage) => _adminId == socketMessage.Id.ToString();
 }

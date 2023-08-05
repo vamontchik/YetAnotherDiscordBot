@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace DiscordBot.Command.RockPaperScissors;
+namespace DiscordBot.Modules.RockPaperScissors;
 
-internal sealed class StatsManager
+public sealed class StatsManager
 {
-    private StatsManager()
+    public StatsManager()
     {
         _idToInfo = new Dictionary<ulong, Stat>();
     }
-
-    private static readonly Lazy<StatsManager> Lazy = new(() => new StatsManager());
-
-    public static StatsManager Instance => Lazy.Value;
 
     private readonly Dictionary<ulong, Stat> _idToInfo;
 

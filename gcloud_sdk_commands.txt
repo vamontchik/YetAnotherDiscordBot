@@ -1,13 +1,13 @@
 ﻿# builds it and send it to google's container registry
-gcloud builds submit --tag gcr.io/aserverinstance/discordbotbuild
+gcloud builds submit --tag <link-to-gcr>
 
 # deploy on a compute instance
 # list of machine-types : https://cloud.google.com/compute/docs/general-purpose-machines
 # ref : https://cloud.google.com/sdk/gcloud/reference/compute/instances/create-with-container
-gcloud compute instances create-with-container bot-instance-1 --container-image gcr.io/aserverinstance/discordbotbuild --machine-type n2-standard-2
+gcloud compute instances create-with-container bot-instance-1 --container-image <link-to-gcr> --machine-type n2-standard-2
 
 # get list of currently running instances
 gcloud compute instances list
 
 # delete an instance that's currently running
-gcloud compute instances delete bot-instance-1
+gcloud compute instances delete <name-of-instance>

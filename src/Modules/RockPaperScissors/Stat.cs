@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DiscordBot.Command.RockPaperScissors;
+namespace DiscordBot.Modules.RockPaperScissors;
 
-internal sealed class Stat
+public sealed class Stat
 {
     private readonly Dictionary<RpsType, int> _winsByType;
     private readonly Dictionary<RpsType, int> _totalByType;

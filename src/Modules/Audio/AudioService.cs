@@ -97,7 +97,10 @@ public class AudioService
 
             await SendAudioWithExceptionHandling(guild, url, ffmpegStream, pcmStream);
 
-            FlipIsPlayingStatus();
+            lock (InteractionWithIsPlayingLock)
+            {
+                FlipIsPlayingStatus();
+            }
         }
     }
 
@@ -307,11 +310,11 @@ public class AudioService
 
         PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `ffmpegStream`");
         _connectedFfmpegStreams.Remove(guild.Id, out var ffmpegStream);
-        ffmpegStream?.Dispose();
+        await (ffmpegStream?.DisposeAsync() ?? ValueTask.CompletedTask);
 
         PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `pcmStream`");
         _connectedPcmStreams.Remove(guild.Id, out var pcmStream);
-        pcmStream?.Dispose();
+        await (pcmStream?.DisposeAsync() ?? ValueTask.CompletedTask);
 
         PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing, stopping, and disposing `audioClient`");
         _connectedAudioClients.Remove(guild.Id, out var audioClient);
@@ -320,7 +323,7 @@ public class AudioService
         audioClient?.Dispose();
     }
 
-    private static async Task<IAudioClient?> ConnectWithExceptionHandling(IVoiceChannel voiceChannel)
+    private static async Task<IAudioClient?> ConnectWithExceptionHandling(IAudioChannel voiceChannel)
     {
         try
         {

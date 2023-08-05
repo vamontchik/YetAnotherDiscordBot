@@ -13,7 +13,7 @@ public sealed class AudioDisposer
         _audioStore = audioStore;
     }
 
-    public Task<bool> CleanupFfmpegProcess(IGuild guildCurrentlyIn)
+    public Task<bool> CleanupFfmpegProcessAsync(IGuild guildCurrentlyIn)
     {
         var guildName = guildCurrentlyIn.Name;
         var guildId = guildCurrentlyIn.Id;
@@ -38,7 +38,7 @@ public sealed class AudioDisposer
         return Task.FromResult(true);
     }
 
-    public async Task<bool> CleanupFfmpegStream(IGuild guildCurrentlyIn)
+    public async Task<bool> CleanupFfmpegStreamAsync(IGuild guildCurrentlyIn)
     {
         var guildName = guildCurrentlyIn.Name;
         var guildId = guildCurrentlyIn.Id;

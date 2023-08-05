@@ -11,7 +11,7 @@ public static class MusicFileHandler
     private const string FileNameWithoutExtension = "music_file";
     private const string FileNameWithExtension = FileNameWithoutExtension + ".wav";
 
-    public static Task<bool> SafeDeleteMusic(IGuild guild)
+    public static Task<bool> SafeDeleteMusicAsync(IGuild guild)
     {
         var guildName = guild.Name;
         var guildId = guild.Id;
@@ -33,7 +33,7 @@ public static class MusicFileHandler
         return Task.FromResult(true);
     }
 
-    public static async Task<bool> SafeDownloadMusic(IGuild guild, string url)
+    public static async Task<bool> SafeDownloadMusicAsync(IGuild guild, string url)
     {
         var guildName = guild.Name;
         var guildId = guild.Id;

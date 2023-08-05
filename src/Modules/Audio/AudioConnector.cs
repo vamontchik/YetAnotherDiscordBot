@@ -16,7 +16,7 @@ public sealed class AudioConnector
         _audioDisposer = audioDisposer;
     }
 
-    public async Task<bool> Connect(IGuild guildToConnectTo, IVoiceChannel voiceChannelToConnectTo)
+    public async Task<bool> ConnectAsync(IGuild guildToConnectTo, IVoiceChannel voiceChannelToConnectTo)
     {
         var guildName = guildToConnectTo.Name;
         var guildId = guildToConnectTo.Id;
@@ -50,7 +50,7 @@ public sealed class AudioConnector
         return true;
     }
 
-    public async Task<bool> Disconnect(IGuild guildToLeaveFrom)
+    public async Task<bool> DisconnectAsync(IGuild guildToLeaveFrom)
     {
         var guildName = guildToLeaveFrom.Name;
         var guildId = guildToLeaveFrom.Id;
@@ -66,8 +66,8 @@ public sealed class AudioConnector
         try
         {
             await _audioDisposer.CleanupPcmStream(guildToLeaveFrom);
-            await _audioDisposer.CleanupFfmpegStream(guildToLeaveFrom);
-            await _audioDisposer.CleanupFfmpegProcess(guildToLeaveFrom);
+            await _audioDisposer.CleanupFfmpegStreamAsync(guildToLeaveFrom);
+            await _audioDisposer.CleanupFfmpegProcessAsync(guildToLeaveFrom);
             await _audioDisposer.CleanupAudioClient(guildToLeaveFrom);
 
             AudioLogger.PrintWithGuildInfo(guildName, guildIdStr,

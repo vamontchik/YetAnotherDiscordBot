@@ -54,6 +54,9 @@ internal static class Program
                 .AddSingleton<PrefixHandler>()
                 .AddSingleton<StatsManager>()
                 .AddSingleton<AudioService>()
+                .AddSingleton<AudioStore>()
+                .AddSingleton<AudioConnector>()
+                .AddSingleton<AudioDisposer>()
             )
             .Build();
 

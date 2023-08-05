@@ -52,11 +52,6 @@ public class AudioService
 
             DeleteDownloadedFileWithExceptionHandling(guild);
 
-            lock (InteractionWithIsPlayingLock)
-            {
-                _isPlaying = false;
-            }
-
             PrintWithGuildInfo(guild.Name, guild.Id.ToString(),
                 $"Disconnected from voice on {guild.Name} and disposed of all streams, process, and client");
         }
@@ -66,9 +61,14 @@ public class AudioService
                 "Unable to disconnect and dispose of all streams, process, and client");
             Console.WriteLine(e);
         }
+        finally
+        {
+            lock (InteractionWithIsPlayingLock)
+            {
+                SetToNoSongPlayingStatus();
+            }
+        }
     }
-
-    private static readonly object InteractionWithIsPlayingLock = new();
 
     public async Task SendAudioAsync(IGuild guild, string url)
     {
@@ -99,7 +99,8 @@ public class AudioService
 
             lock (InteractionWithIsPlayingLock)
             {
-                FlipIsPlayingStatus();
+                if (IsPlayingSong())
+                    FlipIsPlayingStatus();
             }
         }
     }
@@ -338,6 +339,7 @@ public class AudioService
 
     private bool _isPlaying = false;
     private static readonly object IsPlayingLock = new();
+    private static readonly object InteractionWithIsPlayingLock = new();
 
     private void FlipIsPlayingStatus()
     {
@@ -352,6 +354,14 @@ public class AudioService
         lock (IsPlayingLock)
         {
             return _isPlaying;
+        }
+    }
+
+    private void SetToNoSongPlayingStatus()
+    {
+        lock (IsPlayingLock)
+        {
+            _isPlaying = false;
         }
     }
 }

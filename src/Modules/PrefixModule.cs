@@ -50,19 +50,19 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         
         if (voiceChannel is null)
         {
-            await ReplyAsync("Please join a voice channel first");
+            await Context.Message.ReplyAsync("Please join a voice channel first");
             return;
         }
 
         if (!await AudioService.JoinAudioAsync(Context.Guild, voiceChannel)) 
-            await ReplyAsync("Unable to fully connect");
+            await Context.Message.ReplyAsync("Unable to fully connect");
     }
 
     [Command("leave")]
     public async Task HandleLeaveCommand()
     {
         if (!await AudioService.LeaveAudioAsync(Context.Guild))
-            await ReplyAsync("Unable to fully disconnect and clean up resources");
+            await Context.Message.ReplyAsync("Unable to fully disconnect and clean up resources");
     }
 
     [Command("play")]
@@ -79,6 +79,6 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         if (!await AudioService.SendAudioAsync(Context.Guild, url))
-            await ReplyAsync("Something went wrong while playing the song");
+            await Context.Message.ReplyAsync("Something went wrong while playing the song");
     }
 }

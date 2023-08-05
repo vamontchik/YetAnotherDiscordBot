@@ -49,10 +49,14 @@ public class AudioService
         try
         {
             await ExitWithDisposingAll(guild);
-            
-            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Deleting local file");
+
             DeleteDownloadedFileWithExceptionHandling(guild);
-            
+
+            lock (InteractionWithIsPlayingLock)
+            {
+                _isPlaying = false;
+            }
+
             PrintWithGuildInfo(guild.Name, guild.Id.ToString(),
                 $"Disconnected from voice on {guild.Name} and disposed of all streams, process, and client");
         }
@@ -64,10 +68,21 @@ public class AudioService
         }
     }
 
+    private static readonly object InteractionWithIsPlayingLock = new();
+
     public async Task SendAudioAsync(IGuild guild, string url)
     {
         if (_connectedAudioClients.TryGetValue(guild.Id, out var client))
         {
+            lock (InteractionWithIsPlayingLock)
+            {
+                if (IsPlayingSong())
+                    return;
+
+                if (!IsPlayingSong())
+                    FlipIsPlayingStatus();
+            }
+
             if (!await DownloadMusicWithExceptionHandling(url))
                 return;
 
@@ -81,6 +96,8 @@ public class AudioService
                 return;
 
             await SendAudioWithExceptionHandling(guild, url, ffmpegStream, pcmStream);
+
+            FlipIsPlayingStatus();
         }
     }
 
@@ -106,10 +123,8 @@ public class AudioService
                 $"Flushing pcm stream for {url} in {guild.Name}");
             await FlushPcmStreamWithExceptionHandling(guild, pcmStream);
 
-            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Cleaning up after song");
             await CleanupAfterSongEndsWithExceptionHandling(guild);
 
-            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Deleting local file");
             DeleteDownloadedFileWithExceptionHandling(guild);
         }
     }
@@ -193,6 +208,7 @@ public class AudioService
     {
         try
         {
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Deleting local file");
             File.Delete(GetFullPathToDownloadedFile());
         }
         catch (Exception e)
@@ -260,15 +276,15 @@ public class AudioService
     {
         try
         {
-            PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing and disposing `ffmpegProcess`");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `ffmpegProcess`");
             _connectedFfmpegProcesses.Remove(guild.Id, out var ffmpegProcess);
             ffmpegProcess?.Dispose();
 
-            PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing and disposing `ffmpegStream`");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `ffmpegStream`");
             _connectedFfmpegStreams.Remove(guild.Id, out var ffmpegStream);
             ffmpegStream?.Dispose();
 
-            PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing and disposing `pcmStream`");
+            PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `pcmStream`");
             _connectedPcmStreams.Remove(guild.Id, out var pcmStream);
             pcmStream?.Dispose();
 
@@ -285,19 +301,19 @@ public class AudioService
 
     private async Task ExitWithDisposingAll(IGuild guild)
     {
-        PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing and disposing `ffmpegProcess`");
+        PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `ffmpegProcess`");
         _connectedFfmpegProcesses.Remove(guild.Id, out var ffmpegProcess);
         ffmpegProcess?.Dispose();
 
-        PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing and disposing `ffmpegStream`");
+        PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `ffmpegStream`");
         _connectedFfmpegStreams.Remove(guild.Id, out var ffmpegStream);
         ffmpegStream?.Dispose();
 
-        PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing and disposing `pcmStream`");
+        PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing and disposing `pcmStream`");
         _connectedPcmStreams.Remove(guild.Id, out var pcmStream);
         pcmStream?.Dispose();
 
-        PrintWithGuildInfo(guild.Name, guild.Id.ToString(),"Removing, stopping, and disposing `audioClient`");
+        PrintWithGuildInfo(guild.Name, guild.Id.ToString(), "Removing, stopping, and disposing `audioClient`");
         _connectedAudioClients.Remove(guild.Id, out var audioClient);
         await (audioClient?.StopAsync() ?? Task.CompletedTask);
         await (await guild.GetCurrentUserAsync()).ModifyAsync(x => x.Channel = null); // ???
@@ -314,6 +330,25 @@ public class AudioService
         {
             Console.WriteLine(e);
             return null;
+        }
+    }
+
+    private bool _isPlaying = false;
+    private static readonly object IsPlayingLock = new();
+
+    private void FlipIsPlayingStatus()
+    {
+        lock (IsPlayingLock)
+        {
+            _isPlaying = !_isPlaying;
+        }
+    }
+
+    private bool IsPlayingSong()
+    {
+        lock (IsPlayingLock)
+        {
+            return _isPlaying;
         }
     }
 }

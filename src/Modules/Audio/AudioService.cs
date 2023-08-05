@@ -62,14 +62,14 @@ public sealed class AudioService
 
         if (!await SetupFfmpegWithExceptionHandling(guild, url, out var ffmpegProcess, out var ffmpegStream))
         {
-            var _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value?
+            _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value?
             ResetPlayingStatusWithLock();
             return false;
         }
 
         if (ffmpegProcess is null || ffmpegStream is null)
         {
-            var _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value ?
+            _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value ?
             ResetPlayingStatusWithLock();
             return false;
         }
@@ -77,6 +77,9 @@ public sealed class AudioService
         var pcmStream = await CreatePcmStreamWithExceptionHandling(url, guild, audioClient);
         if (pcmStream is null)
         {
+            _ = await _audioDisposer.CleanupFfmpegProcess(guild);
+            _ = await _audioDisposer.CleanupFfmpegStream(guild);
+            _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value ?
             ResetPlayingStatusWithLock();
             return false;
         }
@@ -177,7 +180,7 @@ public sealed class AudioService
         catch (Exception e)
         {
             Console.WriteLine(e);
-            var _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value?
+            _ = await MusicFileHandler.SafeDeleteMusic(guild); // TODO: return value?
             return null;
         }
 

@@ -9,7 +9,6 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/runtime:7.0 AS runtime
 
 WORKDIR /app
-ENV LIBSODIUM_VERSION 1.0.18
 COPY --from=build /app/out ./
 COPY config.yml ./
 RUN apt-get update -y && apt-get upgrade -y

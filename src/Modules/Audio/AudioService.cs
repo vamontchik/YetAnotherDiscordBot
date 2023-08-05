@@ -278,6 +278,29 @@ public sealed class AudioService
         }
     }
 
+    public async Task<bool> SkipAudioAsync(IGuild guild)
+    {
+        var guildName = guild.Name;
+        var guildId = guild.Id;
+        var guildIdStr = guildId.ToString();
+
+        try
+        {
+            _ = await _audioDisposer.CleanupPcmStream(guild); // TODO: return value?
+            _ = await _audioDisposer.CleanupFfmpegStreamAsync(guild); // TODO: return value?
+            _ = await _audioDisposer.CleanupFfmpegProcessAsync(guild); // TODO: return value?
+            _ = await MusicFileHandler.SafeDeleteMusicAsync(guild); // TODO: return value?
+        }
+        catch (Exception e)
+        {
+            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, "Unable to skip current song");
+            Console.WriteLine(e);
+            return false;
+        }
+
+        return true;
+    }
+
     private bool _isPlaying;
     private static readonly object IsPlayingLock = new();
     private static readonly object InteractionWithIsPlayingLock = new();

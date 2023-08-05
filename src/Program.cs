@@ -35,20 +35,20 @@ internal static class Program
                     GatewayIntents = GatewayIntents.All,
                     AlwaysDownloadUsers = true, // TODO: is this necessary ?
                     MessageCacheSize = 100,
-                    LogLevel = LogSeverity.Debug
+                    LogLevel = LogSeverity.Info
                 }))
                 .AddSingleton(serviceProvider =>
                     new InteractionService(
                         serviceProvider.GetRequiredService<DiscordSocketClient>(),
                         new InteractionServiceConfig
                         {
-                            LogLevel = LogSeverity.Debug,
+                            LogLevel = LogSeverity.Info,
                             DefaultRunMode = Discord.Interactions.RunMode.Async
                         }))
                 .AddSingleton<InteractionHandler>()
                 .AddSingleton(_ => new CommandService(new CommandServiceConfig
                 {
-                    LogLevel = LogSeverity.Debug,
+                    LogLevel = LogSeverity.Info,
                     DefaultRunMode = Discord.Commands.RunMode.Async
                 }))
                 .AddSingleton<PrefixHandler>()

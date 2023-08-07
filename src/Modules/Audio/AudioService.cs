@@ -284,6 +284,11 @@ public sealed class AudioService
         var guildId = guild.Id;
         var guildIdStr = guildId.ToString();
 
+        lock (InteractionWithIsPlayingLock)
+        {
+            SetToNoSongPlayingStatus();
+        }
+        
         try
         {
             _ = await _audioDisposer.CleanupPcmStream(guild); // TODO: return value?

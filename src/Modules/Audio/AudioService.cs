@@ -90,10 +90,7 @@ public sealed class AudioService
             return false;
         }
 
-        lock (InteractionWithIsPlayingLock)
-        {
-            ResetPlayingStatusWithLock();
-        }
+        ResetPlayingStatusWithLock();
 
         return true;
 
@@ -288,7 +285,7 @@ public sealed class AudioService
         {
             SetToNoSongPlayingStatus();
         }
-        
+
         try
         {
             _ = await _audioDisposer.CleanupPcmStream(guild); // TODO: return value?

@@ -13,108 +13,120 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
     public StatsManager StatsManager { get; set; }
     public AudioService AudioService { get; set; }
 
-    private const string Separator = "--------------------";
-
     [Command("ping")]
     public async Task HandlePingCommand()
     {
-        Console.WriteLine($"{Separator}PING{Separator}");
-
+        LogMessageWithContext("Ping command");
         await Context.Message.ReplyAsync("pong");
     }
 
     [Command("rps")]
     public async Task HandleRpsCommandNoArg()
     {
-        Console.WriteLine($"{Separator}ROCK_PAPER_SCISSORS_NO_ARG{Separator}");
-        await LogAndReply("Please specify an argument");
+        LogMessageWithContext("Rock-paper-scissors command with no argument");
+        await Context.Message.ReplyAsync("Please specify an argument");
     }
 
     [Command("rps")]
     public async Task HandleRpsCommand([Remainder] string choice)
     {
-        Console.WriteLine($"{Separator}ROCK_PAPER_SCISSORS{Separator}");
-
         var userEnteredValues = choice
             .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .ToList();
 
         if (userEnteredValues.Count > 1)
         {
-            await LogAndReply("Please specify only one argument");
+            LogMessageWithContext("Rock-paper-scissors command with too many arguments");
+            await Context.Message.ReplyAsync("Please specify only one argument");
             return;
         }
 
+        LogMessageWithContext("Rock-paper-scissors command");
         var rpsCommand = new RockPaperScissorsCommand(userEnteredValues.First(), Context, StatsManager);
-
         await rpsCommand.ExecuteAsync();
     }
 
     [Command("join")]
     public async Task HandleJoinCommand()
     {
-        Console.WriteLine($"{Separator}JOIN{Separator}");
-
         var voiceChannel = (Context.User as IGuildUser)?.VoiceChannel;
 
         if (voiceChannel is null)
         {
-            await LogAndReply("Please join a voice channel first");
+            LogMessageWithContext("Join command but the user was not in a voice channel");
+            await Context.Message.ReplyAsync("Please join a voice channel first");
             return;
         }
 
-        if (!await AudioService.JoinAudioAsync(Context.Guild, voiceChannel))
-            await LogAndReply("Unable to fully connect");
+        LogMessageWithContext("Join command");
+        var (success, errorMessage) = await AudioService.JoinAudioAsync(Context.Guild, voiceChannel);
+        if (!success)
+        {
+            LogErrorMessageWithContext(errorMessage, "join");
+            await Context.Message.ReplyAsync(errorMessage);
+        }
     }
 
     [Command("leave")]
     public async Task HandleLeaveCommand()
     {
-        Console.WriteLine($"{Separator}LEAVE{Separator}");
-
-        if (!await AudioService.LeaveAudioAsync(Context.Guild))
-            await LogAndReply("Unable to fully disconnect and clean up resources");
+        LogMessageWithContext("Leave command");
+        var (success, errorMessage) = await AudioService.LeaveAudioAsync(Context.Guild);
+        if (!success)
+        {
+            LogErrorMessageWithContext(errorMessage, "leave");
+            await Context.Message.ReplyAsync(errorMessage);
+        }
     }
 
     [Command("play")]
     public async Task HandlePlayCommandNoArg()
     {
-        Console.WriteLine($"{Separator}PLAY_NO_ARG{Separator}");
-
-        await LogAndReply("Please specify a url");
+        LogMessageWithContext("Play command with no arguments");
+        await Context.Message.ReplyAsync("Please specify a url");
     }
 
     [Command("play")]
     public async Task HandlePlayCommand([Remainder] string url)
     {
-        Console.WriteLine($"{Separator}PLAY{Separator}");
-
         var userEnteredValues = url
             .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .ToList();
 
         if (userEnteredValues.Count > 1)
         {
-            await LogAndReply("Please specify only one url");
+            LogMessageWithContext("Play command with too many arguments");
+            await Context.Message.ReplyAsync("Please specify only one url");
             return;
         }
 
-        if (!await AudioService.SendAudioAsync(Context.Guild, url))
-            await LogAndReply("Something went wrong while playing the song");
+        LogMessageWithContext("Play command");
+        var (success, errorMessage) = await AudioService.SendAudioAsync(Context.Guild, url);
+        if (!success)
+        {
+            LogErrorMessageWithContext(errorMessage, "play");
+            await Context.Message.ReplyAsync(errorMessage);
+        }
     }
 
     [Command("skip")]
     public async Task HandleSkipCommand()
     {
-        Console.WriteLine($"{Separator}SKIP{Separator}");
-
-        if (!await AudioService.SkipAudioAsync(Context.Guild))
-            await LogAndReply("Something went wrong when skipping the current song");
+        LogMessageWithContext("Skip command");
+        var (success, errorMessage) = await AudioService.SkipAudioAsync(Context.Guild);
+        if (!success)
+        {
+            LogErrorMessageWithContext(errorMessage, "skip");
+            await Context.Message.ReplyAsync(errorMessage);
+        }
     }
 
-    private async Task LogAndReply(string message)
-    {
-        Console.WriteLine(message);
-        await Context.Message.ReplyAsync(message);
-    }
+    private void LogMessageWithContext(string message) =>
+        Console.WriteLine(message
+                          + $": requested by {Context.User.Username},{Context.User.Id} in {Context.Guild}");
+
+    private void LogErrorMessageWithContext(string message, string typeOfCommand) =>
+        Console.WriteLine(message
+                          + $": requested by {Context.User.Username},{Context.User.Id} in {Context.Guild}"
+                          + $"Originated from a {typeOfCommand} command");
 }

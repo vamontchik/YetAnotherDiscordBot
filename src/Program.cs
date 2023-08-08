@@ -68,34 +68,87 @@ internal static class Program
         using var serviceScope = host.Services.CreateScope();
         var provider = serviceScope.ServiceProvider;
 
+        var interactionService = await InitializeInteractions(provider);
+        InitializePrefixCommands(provider);
         var client = provider.GetRequiredService<DiscordSocketClient>();
-
-        var slashCommands = provider.GetRequiredService<InteractionService>();
-        var interactionHandler = provider.GetRequiredService<InteractionHandler>();
-        await interactionHandler.InitializeAsync();
-
         var config = provider.GetRequiredService<IConfigurationRoot>();
+        var commandService = provider.GetRequiredService<CommandService>();
 
-        var prefixCommands = provider.GetRequiredService<PrefixHandler>();
-        prefixCommands.AddModule<PrefixModule>();
-        prefixCommands.Initialize();
-
-        client.Log += msg =>
-        {
-            Console.WriteLine(msg.Message);
-            return Task.CompletedTask;
-        };
-        slashCommands.Log += msg =>
-        {
-            Console.WriteLine(msg.Message);
-            return Task.CompletedTask;
-        };
-        client.Ready += async () => await slashCommands.RegisterCommandsGloballyAsync();
+        SetupClientCallbacks(client, interactionService);
+        SetupInteractionServiceCallbacks(interactionService);
+        SetupCommandServiceCallbacks(commandService);
 
         await client.LoginAsync(TokenType.Bot, config["token"]);
 
         await client.StartAsync();
 
         await Task.Delay(-1);
+    }
+
+    private static void SetupCommandServiceCallbacks(CommandService commandService)
+    {
+        commandService.Log += message =>
+        {
+            if (message.Exception is CommandException cmdException)
+            {
+                Console.WriteLine($"[Command/{message.Severity}] {cmdException.Command.Aliases[0]}"
+                                  + $" failed to execute in {cmdException.Context.Channel}.");
+                Console.WriteLine(cmdException);
+            }
+            else
+                Console.WriteLine($"[General/{message.Severity}] {message}");
+
+            return Task.CompletedTask;
+        };
+    }
+
+    private static void SetupInteractionServiceCallbacks(InteractionService interactionService)
+    {
+        interactionService.Log += message =>
+        {
+            if (message.Exception is CommandException cmdException)
+            {
+                Console.WriteLine($"[Command/{message.Severity}] {cmdException.Command.Aliases[0]}"
+                                  + $" failed to execute in {cmdException.Context.Channel}.");
+                Console.WriteLine(cmdException);
+            }
+            else
+                Console.WriteLine($"[General/{message.Severity}] {message}");
+
+            return Task.CompletedTask;
+        };
+    }
+
+    private static void SetupClientCallbacks(DiscordSocketClient client, InteractionService interactionService)
+    {
+        client.Log += message =>
+        {
+            if (message.Exception is CommandException cmdException)
+            {
+                Console.WriteLine($"[Command/{message.Severity}] {cmdException.Command.Aliases[0]}"
+                                  + $" failed to execute in {cmdException.Context.Channel}.");
+                Console.WriteLine(cmdException);
+            }
+            else
+                Console.WriteLine($"[General/{message.Severity}] {message}");
+
+            return Task.CompletedTask;
+        };
+        client.Ready += async () => await interactionService.RegisterCommandsGloballyAsync();
+    }
+
+    private static async Task<InteractionService> InitializeInteractions(IServiceProvider provider)
+    {
+        var interactionService = provider.GetRequiredService<InteractionService>();
+        var interactionHandler = provider.GetRequiredService<InteractionHandler>();
+        await interactionHandler.InitializeAsync();
+        return interactionService;
+    }
+
+    private static void InitializePrefixCommands(IServiceProvider provider)
+    {
+        var prefixCommands = provider.GetRequiredService<PrefixHandler>();
+        prefixCommands.AddModule<PrefixModule>();
+        prefixCommands.Initialize();
     }
 }

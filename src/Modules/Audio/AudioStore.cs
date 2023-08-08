@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Discord.Audio;
@@ -14,77 +16,181 @@ public sealed class AudioStore
 
     #region AudioClient
 
-    public bool ContainsAudioClientForGuild(ulong guildId) =>
-        _connectedAudioClients.ContainsKey(guildId);
-
     public IAudioClient? GetAudioClientForGuild(ulong guildId)
     {
-        _ = _connectedAudioClients.TryGetValue(guildId, out var audioClient);
-        return audioClient;
+        try
+        {
+            return _connectedAudioClients[guildId];
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
     }
 
-    public bool AddAudioClientForGuild(ulong guildId, IAudioClient audioClient) =>
-        _connectedAudioClients.TryAdd(guildId, audioClient);
+    public bool AddAudioClientForGuild(ulong guildId, IAudioClient audioClient)
+    {
+        try
+        {
+            _connectedAudioClients[guildId] = audioClient;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
 
-    public bool RemoveAudioClientFromGuild(ulong guildId, out IAudioClient? audioClient) =>
-        _connectedAudioClients.TryRemove(guildId, out audioClient);
+    public bool RemoveAudioClientFromGuild(ulong guildId, out IAudioClient? audioClient)
+    {
+        try
+        {
+            return _connectedAudioClients.Remove(guildId, out audioClient);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            audioClient = null;
+            return false;
+        }
+    }
 
     #endregion
 
     #region FfmpegProcess
 
-    public bool ContainsFfmpegProcessForGuild(ulong guildId) =>
-        _connectedFfmpegProcesses.ContainsKey(guildId);
-
     public Process? GetFfmpegProcessForGuild(ulong guildId)
     {
-        _ = _connectedFfmpegProcesses.TryGetValue(guildId, out var ffmpegProcess);
-        return ffmpegProcess;
+        try
+        {
+            return _connectedFfmpegProcesses[guildId];
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
     }
 
-    public bool AddFfmpegProcessForGuild(ulong guildId, Process ffmpegProcess) =>
-        _connectedFfmpegProcesses.TryAdd(guildId, ffmpegProcess);
+    public bool AddFfmpegProcessForGuild(ulong guildId, Process ffmpegProcess)
+    {
+        try
+        {
+            _connectedFfmpegProcesses[guildId] = ffmpegProcess;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
 
-    public bool RemoveFfmpegProcessFromGuild(ulong guildId, out Process? ffmpegProcess) =>
-        _connectedFfmpegProcesses.TryRemove(guildId, out ffmpegProcess);
+    public bool RemoveFfmpegProcessFromGuild(ulong guildId, out Process? ffmpegProcess)
+    {
+        try
+        {
+            return _connectedFfmpegProcesses.Remove(guildId, out ffmpegProcess);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            ffmpegProcess = null;
+            return false;
+        }
+    }
 
     #endregion
 
     #region FfmpegStream
 
-    public bool ContainsFfmpegStreamForGuild(ulong guildId) =>
-        _connectedFfmpegStreams.ContainsKey(guildId);
-
     public Stream? GetFfmpegStreamForGuild(ulong guildId)
     {
-        _ = _connectedFfmpegStreams.TryGetValue(guildId, out var ffmpegStream);
-        return ffmpegStream;
+        try
+        {
+            return _connectedFfmpegStreams[guildId];
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
     }
 
-    public bool AddFfmpegStreamForGuild(ulong guildId, Stream ffmpegStream) =>
-        _connectedFfmpegStreams.TryAdd(guildId, ffmpegStream);
+    public bool AddFfmpegStreamForGuild(ulong guildId, Stream ffmpegStream)
+    {
+        try
+        {
+            _connectedFfmpegStreams[guildId] = ffmpegStream;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
 
-    public bool RemoveFfmpegStreamFromGuild(ulong guildId, out Stream? ffmpegStream) =>
-        _connectedFfmpegStreams.TryRemove(guildId, out ffmpegStream);
+    public bool RemoveFfmpegStreamFromGuild(ulong guildId, out Stream? ffmpegStream)
+    {
+        try
+        {
+            return _connectedFfmpegStreams.Remove(guildId, out ffmpegStream);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            ffmpegStream = null;
+            return false;
+        }
+    }
 
     #endregion
 
     #region PcmStream
 
-    public bool ContainsPcmStreamForGuild(ulong guildId) =>
-        _connectedPcmStreams.ContainsKey(guildId);
-
     public AudioOutStream? GetPcmStreamForGuild(ulong guildId)
     {
-        _ = _connectedPcmStreams.TryGetValue(guildId, out var pcmStream);
-        return pcmStream;
+        try
+        {
+            return _connectedPcmStreams[guildId];
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
     }
 
-    public bool AddPcmStreamForGuild(ulong guildId, AudioOutStream pcmStream) =>
-        _connectedPcmStreams.TryAdd(guildId, pcmStream);
+    public bool AddPcmStreamForGuild(ulong guildId, AudioOutStream pcmStream)
+    {
+        try
+        {
+            _connectedPcmStreams[guildId] = pcmStream;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
 
-    public bool RemovePcmStreamFromGuild(ulong guildId, out AudioOutStream? pcmStream) =>
-        _connectedPcmStreams.TryRemove(guildId, out pcmStream);
+    public bool RemovePcmStreamFromGuild(ulong guildId, out AudioOutStream? pcmStream)
+    {
+        try
+        {
+            return _connectedPcmStreams.Remove(guildId, out pcmStream);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            pcmStream = null;
+            return false;
+        }
+    }
 
     #endregion
 }

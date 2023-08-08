@@ -16,16 +16,19 @@ public sealed class AudioConnector
         _audioDisposer = audioDisposer;
     }
 
-    public async Task<bool> ConnectAsync(IGuild guildToConnectTo, IVoiceChannel voiceChannelToConnectTo)
+    public async Task<(bool, string)> SafeConnectAsync(IGuild guildToConnectTo, IVoiceChannel voiceChannelToConnectTo)
     {
         var guildName = guildToConnectTo.Name;
         var guildId = guildToConnectTo.Id;
         var guildIdStr = guildId.ToString();
 
-        if (_audioStore.ContainsAudioClientForGuild(guildId))
+        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, $"Connecting to voice on {guildName}");
+
+        if (_audioStore.GetAudioClientForGuild(guildId) is not null)
         {
-            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, "Bot already is in a channel in this guild!");
-            return false;
+            const string message = "Bot already is in a channel in this guild";
+            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, message);
+            return (false, message);
         }
 
         IAudioClient audioClient;
@@ -36,51 +39,72 @@ public sealed class AudioConnector
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return false;
+            return (false, "Unable to connect to voice channel");
         }
 
         var didAddSucceed = _audioStore.AddAudioClientForGuild(guildId, audioClient);
         if (!didAddSucceed)
         {
-            _ = await _audioDisposer.CleanupAudioClient(guildToConnectTo);
-            return false;
+            const string baseErrorMessage = "Unable to add audio client to internal storage";
+            var (success, innerErrorMessage) = await _audioDisposer.SafeCleanupAudioClientAsync(guildToConnectTo);
+            var fullErrorMessage = success ? baseErrorMessage : innerErrorMessage + " => " + baseErrorMessage;
+            return (false, fullErrorMessage);
         }
 
-        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, $"Connected to voice on {guildName}.");
-        return true;
+        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, $"Connected to voice on {guildName}");
+
+        return (true, string.Empty);
     }
 
-    public async Task<bool> DisconnectAsync(IGuild guildToLeaveFrom)
+    public async Task<(bool, string)> SafeDisconnectAsync(IGuild guild)
     {
-        var guildName = guildToLeaveFrom.Name;
-        var guildId = guildToLeaveFrom.Id;
+        var guildName = guild.Name;
+        var guildId = guild.Id;
         var guildIdStr = guildId.ToString();
 
-        if (!_audioStore.ContainsAudioClientForGuild(guildId))
+        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr,
+            $"Disconnecting from voice on {guildName} and disposing of all stream(s)/process(es)/client(s)");
+
+        if (_audioStore.GetAudioClientForGuild(guildId) is null)
         {
-            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr,
-                "Tried to remove the bot from a guild where it is not connected to any voice channel");
-            return false;
+            const string message = "Bot is not in a channel in this guild";
+            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, message);
+            return (false, message);
         }
 
-        try
+        if (_audioStore.GetPcmStreamForGuild(guildId) is not null)
         {
-            await _audioDisposer.CleanupPcmStream(guildToLeaveFrom);
-            await _audioDisposer.CleanupFfmpegStreamAsync(guildToLeaveFrom);
-            await _audioDisposer.CleanupFfmpegProcessAsync(guildToLeaveFrom);
-            await _audioDisposer.CleanupAudioClient(guildToLeaveFrom);
-
-            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr,
-                $"Disconnected from voice on {guildName} and disposed of all streams, process, and client");
-        }
-        catch (Exception e)
-        {
-            AudioLogger.PrintWithGuildInfo(guildName, guildIdStr,
-                "Unable to disconnect and dispose of all streams, process, and client");
-            Console.WriteLine(e);
-            return false;
+            var (success, errorMessage) = await _audioDisposer.SafeCleanupPcmStreamAsync(guild);
+            if (!success)
+                return (false, errorMessage);
         }
 
-        return true;
+        if (_audioStore.GetFfmpegStreamForGuild(guildId) is not null)
+        {
+            var (success, errorMessage) = await _audioDisposer.SafeCleanupFfmpegStreamAsync(guild);
+            if (!success)
+                return (false, errorMessage);
+        }
+
+
+        if (_audioStore.GetFfmpegProcessForGuild(guildId) is not null)
+        {
+            var (success, errorMessage) = await _audioDisposer.SafeCleanupFfmpegProcessAsync(guild);
+            if (!success)
+                return (false, errorMessage);
+        }
+
+
+        if (_audioStore.GetAudioClientForGuild(guildId) is not null)
+        {
+            var (success, errorMessage) = await _audioDisposer.SafeCleanupAudioClientAsync(guild);
+            if (!success)
+                return (false, errorMessage);
+        }
+
+        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr,
+            $"Disconnected from voice on {guildName} and disposed of all stream(s)/process(es)/client(s)");
+
+        return (true, string.Empty);
     }
 }

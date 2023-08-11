@@ -4,29 +4,25 @@ using Discord.Commands;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
-public sealed class StatsEntryPoint
+public sealed class StatsCommand
 {
-    private readonly SocketCommandContext _socketCommandContext;
-    private readonly StatsManager _statsManager;
-
-    public StatsEntryPoint(
-        SocketCommandContext socketCommandContext,
-        StatsManager statsManager)
-    {
-        _socketCommandContext = socketCommandContext;
-        _statsManager = statsManager;
-    }
+    public required SocketCommandContext SocketCommandContext { get; init; }
+    public required StatsManager StatsManager { get; init; }
 
     public async Task DoAsync()
     {
-        var stat = _statsManager.GetStat(_socketCommandContext.User.Id);
+        var user = SocketCommandContext.User;
+        var stat = await StatsManager.GetStatAsync(user.Id);
         if (stat is null)
-            await _socketCommandContext.Message.ReplyAsync(
-                $"No stats found for {_socketCommandContext.User.Username}");
+        {
+            await SocketCommandContext
+                .Message
+                .ReplyAsync($"No stats found for {user.Username}");
+        }
         else
         {
-            var statsStr = stat.ComputeStats();
-            await _socketCommandContext.Message.ReplyAsync($"{statsStr}");
+            var statsStr = await stat.ComputeStatsAsync();
+            await SocketCommandContext.Message.ReplyAsync($"{statsStr}");
         }
     }
 }

@@ -1,34 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
 public sealed class Stat
 {
-    private readonly Dictionary<RpsType, int> _winsByType;
-    private readonly Dictionary<RpsType, int> _totalByType;
+    private readonly Dictionary<RpsType, int> _winsByType = new()
+    {
+        { RpsType.Rock, 0 },
+        { RpsType.Paper, 0 },
+        { RpsType.Scissors, 0 }
+    };
+
+    private readonly Dictionary<RpsType, int> _totalByType = new()
+    {
+        { RpsType.Rock, 0 },
+        { RpsType.Paper, 0 },
+        { RpsType.Scissors, 0 }
+    };
 
     private static readonly object ReadWriteLock = new();
 
-    public Stat()
-    {
-        _winsByType = new Dictionary<RpsType, int>
-        {
-            { RpsType.Rock, 0 },
-            { RpsType.Paper, 0 },
-            { RpsType.Scissors, 0 }
-        };
-
-        _totalByType = new Dictionary<RpsType, int>
-        {
-            { RpsType.Rock, 0 },
-            { RpsType.Paper, 0 },
-            { RpsType.Scissors, 0 }
-        };
-    }
-
-    public void Update(RpsType rpsType, StatResultType statType)
+    public Task UpdateAsync(RpsType rpsType, StatResultType statType)
     {
         lock (ReadWriteLock)
         {
@@ -36,9 +31,11 @@ public sealed class Stat
             if (statType == StatResultType.Win)
                 _winsByType[rpsType] += 1;
         }
+
+        return Task.CompletedTask;
     }
 
-    public string ComputeStats()
+    public Task<string> ComputeStatsAsync()
     {
         lock (ReadWriteLock)
         {
@@ -54,7 +51,7 @@ public sealed class Stat
                 result.Append(Environment.NewLine);
             }
 
-            return result.ToString();
+            return Task.FromResult(result.ToString());
         }
     }
 

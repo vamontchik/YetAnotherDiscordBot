@@ -26,7 +26,7 @@ public sealed class RpsGameHandler
 
     public required string Argument { get; init; }
     public required SocketCommandContext SocketCommandContext { get; init; }
-    public required StatsManager StatsManager { get; init; }
+    public required IStatsManager StatsManager { get; init; }
 
     public bool ValidUserChoice() => _strChoices.ContainsKey(Argument);
     

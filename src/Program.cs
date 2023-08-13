@@ -52,11 +52,13 @@ internal static class Program
                     DefaultRunMode = Discord.Commands.RunMode.Async
                 }))
                 .AddSingleton<PrefixHandler>()
-                .AddSingleton<StatsManager>()
-                .AddSingleton<AudioService>()
-                .AddSingleton<AudioStore>()
-                .AddSingleton<AudioConnector>()
-                .AddSingleton<AudioDisposer>()
+                .AddSingleton<IStatsManager, StatsManager>()
+                .AddSingleton<IAudioService, AudioService>()
+                .AddSingleton<IAudioStore, AudioStore>()
+                .AddSingleton<IAudioConnector, AudioConnector>()
+                .AddSingleton<IAudioDisposer, AudioDisposer>()
+                .AddSingleton<IMusicFileHandler, MusicFileHandler>()
+                .AddSingleton<IAudioLogger, AudioLogger>()
             )
             .Build();
 

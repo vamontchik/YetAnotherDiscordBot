@@ -7,7 +7,7 @@ namespace DiscordBot.Modules.RockPaperScissors;
 public sealed class StatsCommand
 {
     public required SocketCommandContext SocketCommandContext { get; init; }
-    public required StatsManager StatsManager { get; init; }
+    public required IStatsManager StatsManager { get; init; }
 
     public async Task DoAsync()
     {

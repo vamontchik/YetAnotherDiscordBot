@@ -10,8 +10,17 @@ namespace DiscordBot.Modules;
 
 public sealed class PrefixModule : ModuleBase<SocketCommandContext>
 {
-    public StatsManager StatsManager { get; set; }
-    public AudioService AudioService { get; set; }
+    private readonly IStatsManager _statsManager;
+    private readonly IAudioService _audioService;
+
+    public PrefixModule(
+        IStatsManager statsManager,
+        IAudioService audioService)
+    {
+        _statsManager = statsManager;
+        _audioService = audioService;
+    }
+    
 
     [Command("ping")]
     public async Task HandlePingCommand()
@@ -49,7 +58,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
             Argument = argument,
             IsStatCheck = isStatCheck,
             SocketCommandContext = Context,
-            StatsManager = StatsManager
+            StatsManager = _statsManager
         };
         await rpsCommand.ExecuteAsync();
     }
@@ -67,7 +76,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Join command");
-        var (success, errorMessage) = await AudioService.JoinAudioAsync(Context.Guild, voiceChannel);
+        var (success, errorMessage) = await _audioService.JoinAudioAsync(Context.Guild, voiceChannel);
         if (!success)
         {
             LogErrorMessageWithContext(errorMessage, "join");
@@ -79,7 +88,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
     public async Task HandleLeaveCommand()
     {
         LogMessageWithContext("Leave command");
-        var (success, errorMessage) = await AudioService.LeaveAudioAsync(Context.Guild);
+        var (success, errorMessage) = await _audioService.LeaveAudioAsync(Context.Guild);
         if (!success)
         {
             LogErrorMessageWithContext(errorMessage, "leave");
@@ -109,7 +118,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Play command");
-        var (success, errorMessage) = await AudioService.SendAudioAsync(Context.Guild, url);
+        var (success, errorMessage) = await _audioService.SendAudioAsync(Context.Guild, url);
         if (!success)
         {
             LogErrorMessageWithContext(errorMessage, "play");
@@ -121,7 +130,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
     public async Task HandleSkipCommand()
     {
         LogMessageWithContext("Skip command");
-        var (success, errorMessage) = await AudioService.SkipAudioAsync(Context.Guild);
+        var (success, errorMessage) = await _audioService.SkipAudioAsync(Context.Guild);
         if (!success)
         {
             LogErrorMessageWithContext(errorMessage, "skip");

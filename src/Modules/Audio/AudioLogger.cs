@@ -1,9 +1,15 @@
 ﻿using System;
+using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-public static class AudioLogger
+public interface IAudioLogger
 {
-    public static void PrintWithGuildInfo(string guildName, string guildId, string message) =>
-        Console.WriteLine($"[{guildName}:{guildId}] {message}");
+    void LogWithGuildInfo(IGuild guild, string message);
+}
+
+public class AudioLogger : IAudioLogger
+{
+    public void LogWithGuildInfo(IGuild guild, string message) =>
+        Console.WriteLine($"[{guild.Name}:{guild.Id}] {message}");
 }

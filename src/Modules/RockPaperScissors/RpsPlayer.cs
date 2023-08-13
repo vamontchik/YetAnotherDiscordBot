@@ -4,14 +4,7 @@ public sealed class RpsPlayer
 {
     public const ulong BotId = 0;
 
-    public RpsPlayer(RpsType type, string name, ulong id)
-    {
-        Type = type;
-        Name = name;
-        Id = id;
-    }
-
-    public RpsType Type { get; }
-    public string Name { get; }
-    public ulong Id { get; }
+    public required ulong Id { get; init; }
+    public required string Name { get; init; }
+    public required RpsType Type { get; init; }
 }

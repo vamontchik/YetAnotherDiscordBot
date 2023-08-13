@@ -1,46 +1,40 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
 public sealed class StatsManager
 {
-    public StatsManager()
-    {
-        _idToInfo = new Dictionary<ulong, Stat>();
-    }
+    private readonly ConcurrentDictionary<ulong, Stat> _idToInfo = new();
 
-    private readonly Dictionary<ulong, Stat> _idToInfo;
-
-    public void Update(GameResult gameResult)
+    public async Task UpdateAsync(GameResult gameResult)
     {
-        var winner = gameResult.GetWinner();
+        var winner = await gameResult.GetWinnerAsync();
         if (winner is null)
         {
-            UpdateBothForTie(new List<RpsPlayer> { gameResult.P1, gameResult.P2 });
+            await UpdateBothForTieAsync(new List<RpsPlayer> { gameResult.P1, gameResult.P2 });
         }
         else
         {
-            var loser = gameResult.GetLoser()
+            var loser = await gameResult.GetLoserAsync()
                         ?? throw new InvalidOperationException("Unable to obtain a loser");
-            UpdatePlayer(winner, StatResultType.Win);
-            UpdatePlayer(loser, StatResultType.Loss);
+            await UpdatePlayerAsync(winner, StatResultType.Win);
+            await UpdatePlayerAsync(loser, StatResultType.Loss);
         }
     }
 
-    private void UpdateBothForTie(IEnumerable<RpsPlayer> players)
+    private async Task UpdateBothForTieAsync(IEnumerable<RpsPlayer> players)
     {
         foreach (var p in players)
-        {
-            var statForPlayer = GetFromDictOrNew(p.Id);
-            statForPlayer.Update(p.Type, StatResultType.Tie);
-        }
+            await UpdatePlayerAsync(p, StatResultType.Tie);
     }
 
-    private void UpdatePlayer(RpsPlayer p, StatResultType statType)
+    private async Task UpdatePlayerAsync(RpsPlayer p, StatResultType statType)
     {
         var statForPlayer = GetFromDictOrNew(p.Id);
-        statForPlayer.Update(p.Type, statType);
+        await statForPlayer.UpdateAsync(p.Type, statType);
     }
 
     private Stat GetFromDictOrNew(ulong id)
@@ -50,13 +44,13 @@ public sealed class StatsManager
             return stat!;
 
         stat = new Stat();
-        _idToInfo.Add(id, stat);
+        _idToInfo[id] = stat;
         return stat;
     }
 
-    public Stat? GetStat(ulong id)
+    public Task<Stat?> GetStatAsync(ulong id)
     {
         var success = _idToInfo.TryGetValue(id, out var stat);
-        return success ? stat : null;
+        return Task.FromResult(success ? stat : null);
     }
 }

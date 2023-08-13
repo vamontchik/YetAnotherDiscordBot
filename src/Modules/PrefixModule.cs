@@ -42,7 +42,15 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Rock-paper-scissors command");
-        var rpsCommand = new RockPaperScissorsCommand(userEnteredValues.First(), Context, StatsManager);
+        var argument = userEnteredValues.First();
+        var isStatCheck = argument.Equals("stat") || argument.Equals("stats");
+        var rpsCommand = new RockPaperScissorsCommand
+        {
+            Argument = argument,
+            IsStatCheck = isStatCheck,
+            SocketCommandContext = Context,
+            StatsManager = StatsManager
+        };
         await rpsCommand.ExecuteAsync();
     }
 

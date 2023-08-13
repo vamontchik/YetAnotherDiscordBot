@@ -1,31 +1,32 @@
-﻿namespace DiscordBot.Modules.RockPaperScissors;
+﻿using System.Threading.Tasks;
+
+namespace DiscordBot.Modules.RockPaperScissors;
 
 public sealed class GameResult
 {
-    private readonly GameResultType _winType;
+    public required RpsPlayer P1 { get; init; }
+    public required RpsPlayer P2 { get; init; }
+    public required GameResultType WinType { get; init; }
 
-    public GameResult(RpsPlayer p1, RpsPlayer p2, GameResultType winType)
+    public Task<RpsPlayer?> GetWinnerAsync()
     {
-        P1 = p1;
-        P2 = p2;
-        _winType = winType;
+        var winningPlayer = WinType switch
+        {
+            GameResultType.P1 => P1,
+            GameResultType.P2 => P2,
+            _ => null
+        };
+        return Task.FromResult(winningPlayer);
     }
 
-    public RpsPlayer? GetWinner() => _winType switch
+    public Task<RpsPlayer?> GetLoserAsync()
     {
-        GameResultType.P1 => P1,
-        GameResultType.P2 => P2,
-        _ => null
-    };
-
-    public RpsPlayer? GetLoser() => _winType switch
-    {
-        GameResultType.P1 => P2,
-        GameResultType.P2 => P1,
-        _ => null
-    };
-
-    public RpsPlayer P1 { get; }
-
-    public RpsPlayer P2 { get; }
+        var losingPlayer = WinType switch
+        {
+            GameResultType.P1 => P2,
+            GameResultType.P2 => P1,
+            _ => null
+        };
+        return Task.FromResult(losingPlayer);
+    }
 }

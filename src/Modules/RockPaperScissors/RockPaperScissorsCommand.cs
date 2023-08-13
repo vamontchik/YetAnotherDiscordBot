@@ -8,7 +8,7 @@ public sealed class RockPaperScissorsCommand
 {
     public required string Argument { get; init; }
     public required bool IsStatCheck { get; init; }
-    public required StatsManager StatsManager { get; init; }
+    public required IStatsManager StatsManager { get; init; }
     public required SocketCommandContext SocketCommandContext { get; init; }
 
     public async Task ExecuteAsync()

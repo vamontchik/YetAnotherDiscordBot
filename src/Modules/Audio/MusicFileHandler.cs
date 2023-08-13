@@ -6,18 +6,28 @@ using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-public static class MusicFileHandler
+public interface IMusicFileHandler
+{
+    Task<(bool, string)> DeleteMusicAsync(IGuild guild);
+    Task<(bool, string)> DownloadMusicAsync(IGuild guild, string url);
+    Process? CreateFfmpegProcess();
+}
+
+public class MusicFileHandler : IMusicFileHandler
 {
     private const string FileNameWithoutExtension = "music_file";
     private const string FileNameWithExtension = FileNameWithoutExtension + ".wav";
 
-    public static Task<(bool, string)> SafeDeleteMusicAsync(IGuild guild)
-    {
-        var guildName = guild.Name;
-        var guildId = guild.Id;
-        var guildIdStr = guildId.ToString();
+    private readonly IAudioLogger _audioLogger;
 
-        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, "Deleting music file");
+    public MusicFileHandler(IAudioLogger audioLogger)
+    {
+        _audioLogger = audioLogger;
+    }
+
+    public Task<(bool, string)> DeleteMusicAsync(IGuild guild)
+    {
+        _audioLogger.LogWithGuildInfo(guild, "Deleting music file");
 
         try
         {
@@ -30,18 +40,14 @@ public static class MusicFileHandler
             return Task.FromResult((false, errorMessage));
         }
 
-        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, "Deleted music file");
+        _audioLogger.LogWithGuildInfo(guild, "Deleted music file");
 
         return Task.FromResult((true, string.Empty));
     }
 
-    public static async Task<(bool, string)> SafeDownloadMusicAsync(IGuild guild, string url)
+    public async Task<(bool, string)> DownloadMusicAsync(IGuild guild, string url)
     {
-        var guildName = guild.Name;
-        var guildId = guild.Id;
-        var guildIdStr = guildId.ToString();
-
-        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, "Downloading music file");
+        _audioLogger.LogWithGuildInfo(guild, "Downloading music file");
 
         Process nonNullProcess;
         try
@@ -73,12 +79,12 @@ public static class MusicFileHandler
             return (false, "Exception occured while waiting for download process to finish");
         }
 
-        AudioLogger.PrintWithGuildInfo(guildName, guildIdStr, "Downloaded music file");
+        _audioLogger.LogWithGuildInfo(guild, "Downloaded music file");
 
         return (true, string.Empty);
     }
 
-    public static Process? CreateFfmpegProcess() => Process.Start(new ProcessStartInfo
+    public Process? CreateFfmpegProcess() => Process.Start(new ProcessStartInfo
     {
         FileName = "ffmpeg",
         Arguments =

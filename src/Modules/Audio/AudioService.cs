@@ -55,7 +55,10 @@ public sealed class AudioService : IAudioService
         lock (InteractionWithIsPlayingLock)
         {
             if (IsPlayingSong(guild))
+            {
+                _audioLogger.LogWithGuildInfo(guild, "Already playing another song");
                 return;
+            }
             SetToSongPlayingStatus(guild);
         }
 

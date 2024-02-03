@@ -13,7 +13,7 @@ public interface IMusicFileHandler
     Process? CreateFfmpegProcess();
 }
 
-public class MusicFileHandler : IMusicFileHandler
+public sealed class MusicFileHandler : IMusicFileHandler
 {
     private const string FileNameWithoutExtension = "music_file";
     private const string FileNameWithExtension = FileNameWithoutExtension + ".wav";

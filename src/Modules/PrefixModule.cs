@@ -52,11 +52,9 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
 
         LogMessageWithContext("Rock-paper-scissors command");
         var argument = userEnteredValues.First();
-        var isStatCheck = argument.Equals("stat") || argument.Equals("stats");
         var rpsCommand = new RockPaperScissorsCommand
         {
             Argument = argument,
-            IsStatCheck = isStatCheck,
             SocketCommandContext = Context,
             StatsManager = _statsManager
         };

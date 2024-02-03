@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 
@@ -7,13 +8,15 @@ namespace DiscordBot.Modules.RockPaperScissors;
 public sealed class RockPaperScissorsCommand
 {
     public required string Argument { get; init; }
-    public required bool IsStatCheck { get; init; }
     public required IStatsManager StatsManager { get; init; }
     public required SocketCommandContext SocketCommandContext { get; init; }
 
+    private bool IsStatCheck() => Argument.Equals("stat", StringComparison.OrdinalIgnoreCase) ||
+                                  Argument.Equals("stats", StringComparison.OrdinalIgnoreCase);
+
     public async Task ExecuteAsync()
     {
-        if (IsStatCheck)
+        if (IsStatCheck())
         {
             var statsCommand = new StatsCommand
             {

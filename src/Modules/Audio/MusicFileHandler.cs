@@ -8,8 +8,8 @@ namespace DiscordBot.Modules.Audio;
 
 public interface IMusicFileHandler
 {
-    Task<(bool, string)> DeleteMusicAsync(IGuild guild);
-    Task<(bool, string)> DownloadMusicAsync(IGuild guild, string url);
+    Task DeleteMusicAsync(IGuild guild);
+    Task<bool> DownloadMusicAsync(IGuild guild, string url);
     Process? CreateFfmpegProcess();
 }
 
@@ -25,33 +25,32 @@ public class MusicFileHandler : IMusicFileHandler
         _audioLogger = audioLogger;
     }
 
-    public Task<(bool, string)> DeleteMusicAsync(IGuild guild)
+    public async Task DeleteMusicAsync(IGuild guild)
     {
-        _audioLogger.LogWithGuildInfo(guild, "Deleting music file");
-
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, "Deleting music file");
             File.Delete(GetFullPathToDownloadedFile());
+            _audioLogger.LogWithGuildInfo(guild, "Deleted music file");
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            const string errorMessage = "Unable to delete music file";
-            return Task.FromResult((false, errorMessage));
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
-
-        _audioLogger.LogWithGuildInfo(guild, "Deleted music file");
-
-        return Task.FromResult((true, string.Empty));
     }
 
-    public async Task<(bool, string)> DownloadMusicAsync(IGuild guild, string url)
+    private static string GetFullPathToDownloadedFile()
     {
-        _audioLogger.LogWithGuildInfo(guild, "Downloading music file");
+        var pathToAppContext = Path.GetFullPath(AppContext.BaseDirectory);
+        var pathToFile = Path.Combine(pathToAppContext, FileNameWithExtension);
+        return pathToFile;
+    }
 
-        Process nonNullProcess;
+    public async Task<bool> DownloadMusicAsync(IGuild guild, string url)
+    {
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, "Starting yt-dlp process");
             var process = Process.Start(new ProcessStartInfo
             {
                 CreateNoWindow = true,
@@ -61,27 +60,17 @@ public class MusicFileHandler : IMusicFileHandler
                 Arguments = $"--extract-audio --audio-format wav {url} -o {FileNameWithoutExtension}"
             });
 
-            nonNullProcess = process ?? throw new Exception();
+            _audioLogger.LogWithGuildInfo(guild, "Waiting for yt-dlp process to finish download");
+            await (process?.WaitForExitAsync() ?? Task.CompletedTask);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return (false, "Unable to start download process");
-        }
-
-        try
-        {
-            await nonNullProcess.WaitForExitAsync();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return (false, "Exception occured while waiting for download process to finish");
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            return false;
         }
 
         _audioLogger.LogWithGuildInfo(guild, "Downloaded music file");
-
-        return (true, string.Empty);
+        return true;
     }
 
     public Process? CreateFfmpegProcess() => Process.Start(new ProcessStartInfo
@@ -92,11 +81,4 @@ public class MusicFileHandler : IMusicFileHandler
         UseShellExecute = false,
         RedirectStandardOutput = true
     });
-
-    private static string GetFullPathToDownloadedFile()
-    {
-        var pathToAppContext = Path.GetFullPath(AppContext.BaseDirectory);
-        var pathToFile = Path.Combine(pathToAppContext, FileNameWithExtension);
-        return pathToFile;
-    }
 }

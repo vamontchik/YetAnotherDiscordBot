@@ -20,7 +20,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         _statsManager = statsManager;
         _audioService = audioService;
     }
-    
+
 
     [Command("ping")]
     public async Task HandlePingCommand()
@@ -76,24 +76,14 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Join command");
-        var (success, errorMessage) = await _audioService.JoinAudioAsync(Context.Guild, voiceChannel);
-        if (!success)
-        {
-            LogErrorMessageWithContext(errorMessage, "join");
-            await Context.Message.ReplyAsync(errorMessage);
-        }
+        await _audioService.JoinAudioAsync(Context.Guild, voiceChannel);
     }
 
     [Command("leave")]
     public async Task HandleLeaveCommand()
     {
         LogMessageWithContext("Leave command");
-        var (success, errorMessage) = await _audioService.LeaveAudioAsync(Context.Guild);
-        if (!success)
-        {
-            LogErrorMessageWithContext(errorMessage, "leave");
-            await Context.Message.ReplyAsync(errorMessage);
-        }
+        await _audioService.LeaveAudioAsync(Context.Guild);
     }
 
     [Command("play")]
@@ -118,32 +108,17 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Play command");
-        var (success, errorMessage) = await _audioService.SendAudioAsync(Context.Guild, url);
-        if (!success)
-        {
-            LogErrorMessageWithContext(errorMessage, "play");
-            await Context.Message.ReplyAsync(errorMessage);
-        }
+        await _audioService.SendAudioAsync(Context.Guild, url);
     }
 
     [Command("skip")]
     public async Task HandleSkipCommand()
     {
         LogMessageWithContext("Skip command");
-        var (success, errorMessage) = await _audioService.SkipAudioAsync(Context.Guild);
-        if (!success)
-        {
-            LogErrorMessageWithContext(errorMessage, "skip");
-            await Context.Message.ReplyAsync(errorMessage);
-        }
+        await _audioService.SkipAudioAsync(Context.Guild);
     }
 
     private void LogMessageWithContext(string message) =>
         Console.WriteLine(message
                           + $": requested by {Context.User.Username},{Context.User.Id} in {Context.Guild}");
-
-    private void LogErrorMessageWithContext(string message, string typeOfCommand) =>
-        Console.WriteLine(message
-                          + $": requested by {Context.User.Username},{Context.User.Id} in {Context.Guild}"
-                          + $"Originated from a {typeOfCommand} command");
 }

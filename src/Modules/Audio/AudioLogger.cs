@@ -12,8 +12,8 @@ public interface IAudioLogger
 public class AudioLogger : IAudioLogger
 {
     public void LogExceptionWithGuildInfo(IGuild guild, Exception e) =>
-        Console.WriteLine($"[{guild.Name}:{guild.Id}] {e}");
+        Console.WriteLine($"[{DateTime.Now}][{guild.Name}:{guild.Id}] {e}");
 
     public void LogWithGuildInfo(IGuild guild, string message) =>
-        Console.WriteLine($"[{guild.Name}:{guild.Id}] {message}");
+        Console.WriteLine($"[{DateTime.Now}][{guild.Name}:{guild.Id}] {message}");
 }

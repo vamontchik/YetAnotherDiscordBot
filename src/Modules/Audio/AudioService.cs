@@ -11,10 +11,10 @@ namespace DiscordBot.Modules.Audio;
 
 public interface IAudioService
 {
-    Task<(bool, string)> JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel);
-    Task<(bool, string)> LeaveAudioAsync(IGuild guild);
-    Task<(bool, string)> SendAudioAsync(IGuild guild, string url);
-    Task<(bool, string)> SkipAudioAsync(IGuild guild);
+    Task JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel);
+    Task LeaveAudioAsync(IGuild guild);
+    Task SendAudioAsync(IGuild guild, string url);
+    Task SkipAudioAsync(IGuild guild);
 }
 
 public sealed class AudioService : IAudioService
@@ -40,420 +40,215 @@ public sealed class AudioService : IAudioService
     }
 
 
-    public async Task<(bool, string)> JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel) =>
+    public async Task JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel) =>
         await _audioConnector.ConnectAsync(guild, voiceChannel);
 
-    public async Task<(bool, string)> LeaveAudioAsync(IGuild guild)
+    public async Task LeaveAudioAsync(IGuild guild)
     {
-        var (disconnectSuccess, disconnectErrorMessage) =
-            await _audioConnector.DisconnectAsync(guild);
-        var (musicFileDeletionSuccess, musicFileDeletionErrorMessage) =
-            await _musicFileHandler.DeleteMusicAsync(guild);
-
-        if (disconnectSuccess && musicFileDeletionSuccess)
-        {
-            ResetPlayingStatusWithLock(guild);
-            return (true, string.Empty);
-        }
-
-        var fullErrorMessage = string.Empty;
-        if (!disconnectSuccess)
-            fullErrorMessage += disconnectErrorMessage;
-        if (!musicFileDeletionSuccess)
-            fullErrorMessage += musicFileDeletionErrorMessage;
-
-        return (false, fullErrorMessage);
+        await _audioConnector.DisconnectAsync(guild);
+        await _musicFileHandler.DeleteMusicAsync(guild);
+        ResetPlayingStatusWithLock(guild);
     }
 
-    public async Task<(bool, string)> SendAudioAsync(IGuild guild, string url)
+    public async Task SendAudioAsync(IGuild guild, string url)
     {
         lock (InteractionWithIsPlayingLock)
         {
-            if (IsPlayingSong())
-                return (false, "Currently playing a song");
-
-            SetToSongPlayingStatus();
+            if (IsPlayingSong(guild))
+                return;
+            SetToSongPlayingStatus(guild);
         }
 
-        IAudioClient audioClient;
-        {
-            var possibleAudioClient = _audioStore.GetAudioClientForGuild(guild.Id);
-            if (possibleAudioClient is null)
-            {
-                ResetPlayingStatusWithLock(guild);
-                return (false, "Unable to find audio client");
-            }
-
-            audioClient = possibleAudioClient;
-        }
-
-        {
-            var (success, errorMessage) = await _musicFileHandler.DownloadMusicAsync(guild, url);
-            if (!success)
-            {
-                ResetPlayingStatusWithLock(guild);
-                return (false, errorMessage);
-            }
-        }
-
-        Stream ffmpegStream;
-        {
-            var (success, errorMessage) =
-                await SetupFfmpegAsync(guild, url, out var resultFfmpegProcess, out var resultFfmpegStream);
-
-            if (!success)
-            {
-                ResetPlayingStatusWithLock(guild);
-
-                var (deletionSuccess, deletionErrorMessage) =
-                    await _musicFileHandler.DeleteMusicAsync(guild);
-
-                var fullErrorMessage = deletionSuccess
-                    ? errorMessage
-                    : errorMessage + " => " + deletionErrorMessage;
-
-                return (false, fullErrorMessage);
-            }
-
-            if (resultFfmpegProcess is null)
-            {
-                ResetPlayingStatusWithLock(guild);
-
-                const string newErrorMessage = "ffmpeg process is null";
-
-                var (deletionSuccess, deletionErrorMessage) =
-                    await _musicFileHandler.DeleteMusicAsync(guild);
-
-                var fullErrorMessage = deletionSuccess
-                    ? newErrorMessage
-                    : newErrorMessage + " => " + deletionErrorMessage;
-
-                return (false, fullErrorMessage);
-            }
-
-            if (resultFfmpegStream is null)
-            {
-                ResetPlayingStatusWithLock(guild);
-
-                const string newErrorMessage = "ffmpeg stream is null";
-
-                var (deletionSuccess, deletionErrorMessage) =
-                    await _musicFileHandler.DeleteMusicAsync(guild);
-
-                var fullErrorMessage = deletionSuccess
-                    ? newErrorMessage
-                    : newErrorMessage + " => " + deletionErrorMessage;
-
-                return (false, fullErrorMessage);
-            }
-
-            if (!_audioStore.AddFfmpegProcessForGuild(guild.Id, resultFfmpegProcess))
-            {
-                ResetPlayingStatusWithLock(guild);
-
-                var (deletionSuccess, deletionErrorMessage) =
-                    await _musicFileHandler.DeleteMusicAsync(guild);
-                var removalSuccess = _audioStore.RemoveFfmpegProcessFromGuild(guild.Id, out _);
-
-                var fullErrorMessage = "Unable to add ffmpeg process to internal storage";
-                if (!deletionSuccess)
-                    fullErrorMessage += " => " + deletionErrorMessage;
-                if (!removalSuccess)
-                    fullErrorMessage += " => " + "Unable to remove ffmpeg process from internal storage";
-
-                return (false, fullErrorMessage);
-            }
-
-            if (!_audioStore.AddFfmpegStreamForGuild(guild.Id, resultFfmpegStream))
-            {
-                ResetPlayingStatusWithLock(guild);
-
-                var (ffmpegStreamCleanupSuccess, ffmpegStreamCleanupErrorMessage) =
-                    await _audioDisposer.CleanupFfmpegStreamAsync(guild);
-                var (ffmpegProcessCleanupSuccess, ffmpegProcessCleanupErrorMessage) =
-                    await _audioDisposer.CleanupFfmpegProcessAsync(guild);
-                var (deletionSuccess, deletionErrorMessage) =
-                    await _musicFileHandler.DeleteMusicAsync(guild);
-                var removalSuccess = _audioStore.RemoveFfmpegProcessFromGuild(guild.Id, out _);
-
-                var fullErrorMessage = "Unable to add ffmpeg stream to internal storage";
-                if (!ffmpegStreamCleanupSuccess)
-                    fullErrorMessage += " => " + ffmpegStreamCleanupErrorMessage;
-                if (!ffmpegProcessCleanupSuccess)
-                    fullErrorMessage += " => " + ffmpegProcessCleanupErrorMessage;
-                if (!deletionSuccess)
-                    fullErrorMessage += " => " + deletionErrorMessage;
-                if (!removalSuccess)
-                    fullErrorMessage += " => " + "Unable to remove ffmpeg process from internal storage";
-
-                return (false, fullErrorMessage);
-            }
-
-            ffmpegStream = resultFfmpegStream;
-        }
-
-        AudioOutStream pcmStream;
-        {
-            var (resultPcmStream, errorMessage) = await CreatePcmStreamAsync(url, guild, audioClient);
-
-            if (resultPcmStream is null)
-            {
-                ResetPlayingStatusWithLock(guild);
-
-                var (cleanupFfmpegStreamSuccess, cleanupFfmpegStreamErrorMessage) =
-                    await _audioDisposer.CleanupFfmpegStreamAsync(guild);
-                var (cleanupFfmpegProcessSuccess, cleanupFfmpegProcessErrorMessage) =
-                    await _audioDisposer.CleanupFfmpegProcessAsync(guild);
-                var (cleanupMusicFileSuccess, cleanupMusicFileErrorMessage) =
-                    await _musicFileHandler.DeleteMusicAsync(guild);
-
-                var fullErrorMessage = errorMessage;
-                if (!cleanupFfmpegStreamSuccess)
-                    fullErrorMessage += " => " + cleanupFfmpegStreamErrorMessage;
-                if (!cleanupFfmpegProcessSuccess)
-                    fullErrorMessage += " => " + cleanupFfmpegProcessErrorMessage;
-                if (!cleanupMusicFileSuccess)
-                    fullErrorMessage += " => " + cleanupMusicFileErrorMessage;
-
-                return (false, fullErrorMessage);
-            }
-
-            pcmStream = resultPcmStream;
-        }
-
-        {
-            var (success, errorMessage) = await SendAudioAsync(guild, url, ffmpegStream, pcmStream);
-            if (!success)
-                return (false, errorMessage);
-        }
-
+        var audioClient = _audioStore.GetAudioClientForGuild(guild);
+        if (audioClient is null)
         {
             ResetPlayingStatusWithLock(guild);
-
-            var (flushSuccess, flushErrorMessage) =
-                await FlushPcmStreamAsync(guild, url, pcmStream);
-            var (cleanupSuccess, cleanupErrorMessage) =
-                await CleanupAfterSongEndsAsync(guild);
-            var (musicFileCleanupSuccess, musicFileCleanupErrorMessage) =
-                await _musicFileHandler.DeleteMusicAsync(guild);
-
-            if (flushSuccess && cleanupSuccess && musicFileCleanupSuccess)
-                return (true, string.Empty);
-
-            var fullErrorMessage = string.Empty;
-            if (!flushSuccess)
-                fullErrorMessage += " => " + flushErrorMessage;
-            if (!cleanupSuccess)
-                fullErrorMessage += " => " + cleanupErrorMessage;
-            if (!musicFileCleanupSuccess)
-                fullErrorMessage += " => " + musicFileCleanupErrorMessage;
-
-            return (false, fullErrorMessage);
+            return;
         }
+
+        var didMusicDownload = await _musicFileHandler.DownloadMusicAsync(guild, url);
+        if (!didMusicDownload)
+        {
+            await _audioDisposer.CleanupAudioClientAsync(guild);
+            await _musicFileHandler.DeleteMusicAsync(guild);
+            ResetPlayingStatusWithLock(guild);
+            return;
+        }
+
+        var successfullySetupFfmpeg = SetupFfmpeg(guild, url, out var ffmpegProcess, out var ffmpegStream);
+        if (!successfullySetupFfmpeg ||
+            ffmpegProcess is null ||
+            ffmpegStream is null ||
+            !_audioStore.AddFfmpegProcessForGuild(guild, ffmpegProcess) ||
+            !_audioStore.AddFfmpegStreamForGuild(guild, ffmpegStream))
+        {
+            await _audioDisposer.CleanupFfmpegStreamAsync(guild);
+            await _audioDisposer.CleanupFfmpegProcessAsync(guild);
+            await _musicFileHandler.DeleteMusicAsync(guild);
+            ResetPlayingStatusWithLock(guild);
+            return;
+        }
+
+        var pcmStream = await CreatePcmStreamAsync(url, guild, audioClient);
+        if (pcmStream is null)
+        {
+            await _audioDisposer.CleanupFfmpegStreamAsync(guild);
+            await _audioDisposer.CleanupFfmpegProcessAsync(guild);
+            await _audioDisposer.CleanupPcmStreamAsync(guild);
+            await _musicFileHandler.DeleteMusicAsync(guild);
+            ResetPlayingStatusWithLock(guild);
+            return;
+        }
+
+        await SendAudioAsync(guild, url, ffmpegStream, pcmStream);
+
+        await FlushPcmStreamAsync(guild, url, pcmStream);
+        await _audioDisposer.CleanupPcmStreamAsync(guild);
+        await _audioDisposer.CleanupFfmpegStreamAsync(guild);
+        await _audioDisposer.CleanupFfmpegProcessAsync(guild);
+        await _musicFileHandler.DeleteMusicAsync(guild);
+        ResetPlayingStatusWithLock(guild);
     }
 
     private void ResetPlayingStatusWithLock(IGuild guild)
     {
         _audioLogger.LogWithGuildInfo(guild, "ResetPlayingStatusWithLock: about to obtain lock");
+
         lock (InteractionWithIsPlayingLock)
         {
             _audioLogger.LogWithGuildInfo(guild, "ResetPlayingStatusWithLock: obtained lock");
-            SetToNoSongPlayingStatus();
+            SetToNoSongPlayingStatus(guild);
             _audioLogger.LogWithGuildInfo(guild, "ResetPlayingStatusWithLock: reset status");
         }
 
         _audioLogger.LogWithGuildInfo(guild, "ResetPlayingStatusWithLock: released lock");
     }
 
-    private Task<(bool, string)> SetupFfmpegAsync(
-        IGuild guild,
-        string url,
-        out Process? ffmpegProcess,
-        out Stream? ffmpegStream)
+    private bool SetupFfmpeg(IGuild guild, string url, out Process? ffmpegProcess, out Stream? ffmpegStream)
     {
-        _audioLogger.LogWithGuildInfo(guild, $"Creating ffmpeg stream of {url} in {guild.Name}");
-
         ffmpegProcess = null;
         ffmpegStream = null;
 
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, "Creating ffmpeg process");
             var createdProcess = _musicFileHandler.CreateFfmpegProcess();
             if (createdProcess is null)
-                return Task.FromResult((false, "createdProcess was null"));
+            {
+                _audioLogger.LogWithGuildInfo(guild, "createdProcess is null");
+                return false;
+            }
 
-            var baseStream = createdProcess.StandardOutput.BaseStream;
-
+            _audioLogger.LogWithGuildInfo(guild, "Retrieving base stream");
             ffmpegProcess = createdProcess;
-            ffmpegStream = baseStream;
+            ffmpegStream = createdProcess.StandardOutput.BaseStream;
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
             ffmpegProcess = null;
             ffmpegStream = null;
-
-            return Task.FromResult((false, "Exception occured while creating ffmpeg process"));
+            return false;
         }
 
         _audioLogger.LogWithGuildInfo(guild, $"Created ffmpeg stream of {url} in {guild.Name}");
-
-        return Task.FromResult((true, string.Empty));
+        return true;
     }
 
-    private async Task<(AudioOutStream?, string)> CreatePcmStreamAsync(
+    private async Task<AudioOutStream?> CreatePcmStreamAsync(
         string url,
         IGuild guild,
         IAudioClient client)
     {
-        _audioLogger.LogWithGuildInfo(guild, $"Creating pcm stream of {url} in {guild.Name}");
-
         AudioOutStream pcmStream;
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, $"Creating pcm stream of {url} in {guild.Name}");
             pcmStream = client.CreatePCMStream(AudioApplication.Mixed);
+            _audioLogger.LogWithGuildInfo(guild, $"Created pcm stream of {url} in {guild.Name}");
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            const string baseErrorMessage = "Unable to create pcm stream";
-            var (success, innerErrorMessage) = await _musicFileHandler.DeleteMusicAsync(guild);
-            var fullErrorMessage = success ? baseErrorMessage : innerErrorMessage + " => " + baseErrorMessage;
-            return (null, fullErrorMessage);
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            return null;
         }
 
-        if (!_audioStore.AddPcmStreamForGuild(guild.Id, pcmStream))
-            return (null, "Unable to add pcm stream to internal storage");
-
-        _audioLogger.LogWithGuildInfo(guild, $"Created pcm stream of {url} in {guild.Name}");
-
-        return (pcmStream, string.Empty);
+        return _audioStore.AddPcmStreamForGuild(guild, pcmStream)
+            ? pcmStream
+            : null;
     }
 
-    private async Task<(bool, string)> SendAudioAsync(
+    private async Task SendAudioAsync(
         IGuild guild,
         string url,
         Stream ffmpegStream,
         Stream pcmStream)
     {
-        _audioLogger.LogWithGuildInfo(guild, $"Copying music bytes to pcm stream for {url} in {guild.Name}");
-
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, $"Copying music bytes to pcm stream for {url} in {guild.Name}");
             await ffmpegStream.CopyToAsync(pcmStream);
+            _audioLogger.LogWithGuildInfo(guild, $"Copied music bytes to pcm stream for {url} in {guild.Name}");
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return (false, "Unable to copy (all?) bytes from ffmpeg stream to pcm stream");
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
-
-        _audioLogger.LogWithGuildInfo(guild, $"Copied music bytes to pcm stream for {url} in {guild.Name}");
-
-        return (true, string.Empty);
     }
 
-    private async Task<(bool, string)> FlushPcmStreamAsync(
+    private async Task FlushPcmStreamAsync(
         IGuild guild,
         string url,
         Stream pcmStream)
     {
-        _audioLogger.LogWithGuildInfo(guild, $"Flushing pcm stream for {url} in {guild.Name}");
-
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, $"Flushing pcm stream for {url} in {guild.Name}");
             await pcmStream.FlushAsync();
+            _audioLogger.LogWithGuildInfo(guild, $"Flushed pcm stream for {url} in {guild.Name}");
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return (false, "Failed to flush final bytes");
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
-
-        _audioLogger.LogWithGuildInfo(guild, $"Flushed pcm stream for {url} in {guild.Name}");
-
-        return (true, string.Empty);
     }
 
-    private async Task<(bool, string)> CleanupAfterSongEndsAsync(IGuild guild)
+    public async Task SkipAudioAsync(IGuild guild)
     {
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupPcmStreamAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupFfmpegStreamAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupFfmpegProcessAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        return (true, string.Empty);
-    }
-
-    public async Task<(bool, string)> SkipAudioAsync(IGuild guild)
-    {
+        await _audioDisposer.CleanupPcmStreamAsync(guild);
+        await _audioDisposer.CleanupFfmpegStreamAsync(guild);
+        await _audioDisposer.CleanupFfmpegProcessAsync(guild);
+        await _musicFileHandler.DeleteMusicAsync(guild);
         ResetPlayingStatusWithLock(guild);
-
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupPcmStreamAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupFfmpegStreamAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupFfmpegProcessAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        {
-            var (success, errorMessage) = await _musicFileHandler.DeleteMusicAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        return (true, string.Empty);
     }
 
     private bool _isPlaying;
     private static readonly object IsPlayingLock = new();
     private static readonly object InteractionWithIsPlayingLock = new();
 
-    private bool IsPlayingSong()
+    private bool IsPlayingSong(IGuild guild)
     {
         lock (IsPlayingLock)
         {
+            _audioLogger.LogWithGuildInfo(guild, $"Retrieving _isPlaying value of {_isPlaying}");
             return _isPlaying;
         }
     }
 
-    private void SetToNoSongPlayingStatus()
+    private void SetToNoSongPlayingStatus(IGuild guild)
     {
         lock (IsPlayingLock)
         {
+            _audioLogger.LogWithGuildInfo(guild, $"Setting _isPlaying to false");
             _isPlaying = false;
         }
     }
 
-    private void SetToSongPlayingStatus()
+    private void SetToSongPlayingStatus(IGuild guild)
     {
         lock (IsPlayingLock)
         {
+            _audioLogger.LogWithGuildInfo(guild, "Setting _isPlaying to true");
             _isPlaying = true;
         }
     }

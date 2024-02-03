@@ -32,7 +32,7 @@ public sealed class AudioDisposer : IAudioDisposer
 
     public async Task CleanupFfmpegProcessAsync(IGuild guild)
     {
-        if (!RemoveStoredFfmpegProcess(guild, out var ffmpegProcess))
+        if (!RemoveStoredFfmpegProcess(guild, out var ffmpegProcess) || ffmpegProcess is null)
             return;
 
         if (!DisposeProcess(guild, ffmpegProcess))
@@ -44,12 +44,12 @@ public sealed class AudioDisposer : IAudioDisposer
     private bool RemoveStoredFfmpegProcess(IGuild guild, out Process? ffmpegProcess) =>
         _audioStore.RemoveFfmpegProcessFromGuild(guild, out ffmpegProcess);
 
-    private bool DisposeProcess(IGuild guild, IDisposable? ffmpegProcess)
+    private bool DisposeProcess(IGuild guild, IDisposable ffmpegProcess)
     {
         try
         {
             _audioLogger.LogWithGuildInfo(guild, "Disposing of ffmpeg process");
-            ffmpegProcess?.Dispose();
+            ffmpegProcess.Dispose();
             return true;
         }
         catch (Exception e)
@@ -65,7 +65,7 @@ public sealed class AudioDisposer : IAudioDisposer
 
     public async Task CleanupFfmpegStreamAsync(IGuild guild)
     {
-        if (!RemoveStoredFfmpegStream(guild, out var ffmpegStream))
+        if (!RemoveStoredFfmpegStream(guild, out var ffmpegStream) || ffmpegStream is null)
             return;
 
         if (!await DisposeFfmpegStream(guild, ffmpegStream))
@@ -77,12 +77,12 @@ public sealed class AudioDisposer : IAudioDisposer
     private bool RemoveStoredFfmpegStream(IGuild guild, out Stream? ffmpegStream) =>
         _audioStore.RemoveFfmpegStreamFromGuild(guild, out ffmpegStream);
 
-    private async Task<bool> DisposeFfmpegStream(IGuild guild, IAsyncDisposable? ffmpegStream)
+    private async Task<bool> DisposeFfmpegStream(IGuild guild, IAsyncDisposable ffmpegStream)
     {
         try
         {
             _audioLogger.LogWithGuildInfo(guild, "Disposing of ffmpeg stream");
-            await (ffmpegStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+            await ffmpegStream.DisposeAsync();
             return true;
         }
         catch (Exception e)
@@ -98,7 +98,7 @@ public sealed class AudioDisposer : IAudioDisposer
 
     public async Task CleanupPcmStreamAsync(IGuild guild)
     {
-        if (!RemoveStoredPcmStream(guild, out var pcmStream))
+        if (!RemoveStoredPcmStream(guild, out var pcmStream) || pcmStream is null)
             return;
 
         if (!await DisposePcmStream(guild, pcmStream))
@@ -110,12 +110,12 @@ public sealed class AudioDisposer : IAudioDisposer
     private bool RemoveStoredPcmStream(IGuild guild, out AudioOutStream? pcmStream) =>
         _audioStore.RemovePcmStreamFromGuild(guild, out pcmStream);
 
-    private async Task<bool> DisposePcmStream(IGuild guild, IAsyncDisposable? pcmStream)
+    private async Task<bool> DisposePcmStream(IGuild guild, IAsyncDisposable pcmStream)
     {
         try
         {
             _audioLogger.LogWithGuildInfo(guild, "Disposing of pcm stream");
-            await (pcmStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+            await pcmStream.DisposeAsync();
             return true;
         }
         catch (Exception e)
@@ -131,7 +131,7 @@ public sealed class AudioDisposer : IAudioDisposer
 
     public async Task CleanupAudioClientAsync(IGuild guild)
     {
-        if (!RemoveStoredAudioClient(guild, out var audioClient))
+        if (!RemoveStoredAudioClient(guild, out var audioClient) || audioClient is null)
             return;
 
         await StopAudioClient(guild, audioClient);
@@ -148,7 +148,7 @@ public sealed class AudioDisposer : IAudioDisposer
             _audioLogger.LogWithGuildInfo(guild, "Obtaining current user");
             var currentUser = await guild.GetCurrentUserAsync();
             _audioLogger.LogWithGuildInfo(guild, "Setting channel property to null for current user");
-            await (currentUser?.ModifyAsync(x => x.Channel = null) ?? Task.CompletedTask);
+            await currentUser.ModifyAsync(x => x.Channel = null);
         }
         catch (Exception e)
         {
@@ -159,12 +159,12 @@ public sealed class AudioDisposer : IAudioDisposer
     private bool RemoveStoredAudioClient(IGuild guild, out IAudioClient? audioClient) =>
         _audioStore.RemoveAudioClientFromGuild(guild, out audioClient);
 
-    private async Task StopAudioClient(IGuild guild, IAudioClient? audioClient)
+    private async Task StopAudioClient(IGuild guild, IAudioClient audioClient)
     {
         try
         {
             _audioLogger.LogWithGuildInfo(guild, "Stopping audio client");
-            await (audioClient?.StopAsync() ?? Task.CompletedTask);
+            await audioClient.StopAsync();
         }
         catch (Exception e)
         {
@@ -172,12 +172,12 @@ public sealed class AudioDisposer : IAudioDisposer
         }
     }
 
-    private void DisposeAudioClient(IGuild guild, IDisposable? audioClient)
+    private void DisposeAudioClient(IGuild guild, IDisposable audioClient)
     {
         try
         {
             _audioLogger.LogWithGuildInfo(guild, "Disposing of audio client");
-            audioClient?.Dispose();
+            audioClient.Dispose();
         }
         catch (Exception e)
         {

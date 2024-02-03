@@ -7,8 +7,8 @@ namespace DiscordBot.Modules.Audio;
 
 public interface IAudioConnector
 {
-    Task<(bool, string)> ConnectAsync(IGuild guild, IVoiceChannel voiceChannel);
-    Task<(bool, string)> DisconnectAsync(IGuild guild);
+    Task ConnectAsync(IGuild guild, IVoiceChannel voiceChannel);
+    Task DisconnectAsync(IGuild guild);
 }
 
 public sealed class AudioConnector : IAudioConnector
@@ -18,7 +18,7 @@ public sealed class AudioConnector : IAudioConnector
     private readonly IAudioLogger _audioLogger;
 
     public AudioConnector(
-        IAudioStore audioStore, 
+        IAudioStore audioStore,
         IAudioDisposer audioDisposer,
         IAudioLogger audioLogger)
     {
@@ -27,91 +27,66 @@ public sealed class AudioConnector : IAudioConnector
         _audioLogger = audioLogger;
     }
 
-    public async Task<(bool, string)> ConnectAsync(IGuild guild, IVoiceChannel voiceChannel)
+    public async Task ConnectAsync(IGuild guild, IVoiceChannel voiceChannel)
     {
-        _audioLogger.LogWithGuildInfo(guild, $"Connecting to voice on {guild.Name}");
-
-        if (_audioStore.GetAudioClientForGuild(guild.Id) is not null)
+        _audioLogger.LogWithGuildInfo(guild, $"Checking if bot is already in guild {guild.Name}");
+        if (_audioStore.GetAudioClientForGuild(guild) is not null)
         {
-            const string message = "Bot already is in a channel in this guild";
-            _audioLogger.LogWithGuildInfo(guild, message);
-            return (false, message);
+            _audioLogger.LogWithGuildInfo(guild, $"Bot already is in a channel for guild {guild.Name}");
+            return;
         }
 
-        IAudioClient audioClient;
-        try
-        {
-            audioClient = await voiceChannel.ConnectAsync();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return (false, "Unable to connect to voice channel");
-        }
+        var audioClient = await ConnectToVoiceAsync(guild, voiceChannel);
+        if (audioClient is null)
+            return;
 
-        var didAddSucceed = _audioStore.AddAudioClientForGuild(guild.Id, audioClient);
+        var didAddSucceed = _audioStore.AddAudioClientForGuild(guild, audioClient);
         if (!didAddSucceed)
         {
-            const string baseErrorMessage = "Unable to add audio client to internal storage";
-            var (success, innerErrorMessage) = await _audioDisposer.CleanupAudioClientAsync(guild);
-            var fullErrorMessage = success ? baseErrorMessage : innerErrorMessage + " => " + baseErrorMessage;
-            return (false, fullErrorMessage);
+            await _audioDisposer.CleanupAudioClientAsync(guild);
+            return;
         }
 
         _audioLogger.LogWithGuildInfo(guild, $"Connected to voice on {guild.Name}");
-
-        return (true, string.Empty);
     }
 
-    public async Task<(bool, string)> DisconnectAsync(IGuild guild)
+    private async Task<IAudioClient?> ConnectToVoiceAsync(IGuild guild, IAudioChannel voiceChannel)
     {
-        var guildName = guild.Name;
-        var guildId = guild.Id;
-        var guildIdStr = guildId.ToString();
-
-        _audioLogger.LogWithGuildInfo(guild,
-            $"Disconnecting from voice on {guildName} and disposing of all stream(s)/process(es)/client(s)");
-
-        if (_audioStore.GetAudioClientForGuild(guildId) is null)
+        try
         {
-            const string message = "Bot is not in a channel in this guild";
-            _audioLogger.LogWithGuildInfo(guild, message);
-            return (false, message);
+            _audioLogger.LogWithGuildInfo(guild, "Connecting to voice channel");
+            return await voiceChannel.ConnectAsync();
+        }
+        catch (Exception e)
+        {
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            return null;
+        }
+    }
+
+    public async Task DisconnectAsync(IGuild guild)
+    {
+        _audioLogger.LogWithGuildInfo(guild, $"Checking if bot is connected to a channel in guild {guild.Name}");
+        if (_audioStore.GetAudioClientForGuild(guild) is null)
+        {
+            _audioLogger.LogWithGuildInfo(guild, $"Bot is not in a channel for guild {guild.Name}");
+            return;
         }
 
-        if (_audioStore.GetPcmStreamForGuild(guildId) is not null)
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupPcmStreamAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
+        if (_audioStore.GetPcmStreamForGuild(guild) is not null)
+            await _audioDisposer.CleanupPcmStreamAsync(guild);
 
-        if (_audioStore.GetFfmpegStreamForGuild(guildId) is not null)
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupFfmpegStreamAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
+        if (_audioStore.GetFfmpegStreamForGuild(guild) is not null)
+            await _audioDisposer.CleanupFfmpegStreamAsync(guild);
 
+        if (_audioStore.GetFfmpegProcessForGuild(guild) is not null)
+            await _audioDisposer.CleanupFfmpegProcessAsync(guild);
 
-        if (_audioStore.GetFfmpegProcessForGuild(guildId) is not null)
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupFfmpegProcessAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
+        if (_audioStore.GetAudioClientForGuild(guild) is not null)
+            await _audioDisposer.CleanupAudioClientAsync(guild);
 
-
-        if (_audioStore.GetAudioClientForGuild(guildId) is not null)
-        {
-            var (success, errorMessage) = await _audioDisposer.CleanupAudioClientAsync(guild);
-            if (!success)
-                return (false, errorMessage);
-        }
-
-        _audioLogger.LogWithGuildInfo(guild,
-            $"Disconnected from voice on {guildName} and disposed of all stream(s)/process(es)/client(s)");
-
-        return (true, string.Empty);
+        _audioLogger.LogWithGuildInfo(
+            guild,
+            $"Disconnected from voice on {guild.Name} and disposed of all stream(s)/process(es)/client(s)");
     }
 }

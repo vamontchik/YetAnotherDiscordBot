@@ -1,27 +1,24 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Audio;
 
 namespace DiscordBot.Modules.Audio;
 
 public interface IAudioDisposer
 {
-    Task<(bool, string)> CleanupFfmpegProcessAsync(IGuild guild);
-    Task<(bool, string)> CleanupFfmpegStreamAsync(IGuild guild);
-    Task<(bool, string)> CleanupPcmStreamAsync(IGuild guild);
-    Task<(bool, string)> CleanupAudioClientAsync(IGuild guild);
+    Task CleanupFfmpegProcessAsync(IGuild guild);
+    Task CleanupFfmpegStreamAsync(IGuild guild);
+    Task CleanupPcmStreamAsync(IGuild guild);
+    Task CleanupAudioClientAsync(IGuild guild);
 }
 
 public sealed class AudioDisposer : IAudioDisposer
 {
     private readonly IAudioStore _audioStore;
     private readonly IAudioLogger _audioLogger;
-
-    private const string FailureToRemoveErrorMessageBase =
-        "Unable to remove {0} from internal storage";
-
-    private const string FailureToDisposeMessageBase =
-        "Unable to dispose of {0}";
 
     public AudioDisposer(
         IAudioStore audioStore,
@@ -31,142 +28,162 @@ public sealed class AudioDisposer : IAudioDisposer
         _audioLogger = audioLogger;
     }
 
-    public Task<(bool, string)> CleanupFfmpegProcessAsync(IGuild guild)
+    #region CleanupFfmpegProcessAsync
+
+    public async Task CleanupFfmpegProcessAsync(IGuild guild)
     {
-        _audioLogger.LogWithGuildInfo(guild, "Removing and disposing ffmpeg process");
+        if (!RemoveStoredFfmpegProcess(guild, out var ffmpegProcess))
+            return;
 
-        var didRemoveSucceed = _audioStore.RemoveFfmpegProcessFromGuild(guild.Id, out var ffmpegProcess);
-        if (!didRemoveSucceed)
-        {
-            var errorMessage = string.Format(FailureToRemoveErrorMessageBase, "ffmpeg process");
-            return Task.FromResult((false, errorMessage));
-        }
-
-        try
-        {
-            ffmpegProcess?.Dispose();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            var errorMessage = string.Format(FailureToDisposeMessageBase, "ffmpeg process");
-            return Task.FromResult((false, errorMessage));
-        }
+        if (!DisposeProcess(guild, ffmpegProcess))
+            return;
 
         _audioLogger.LogWithGuildInfo(guild, "Removed and disposed of ffmpeg process");
-
-        return Task.FromResult((true, string.Empty));
     }
 
-    public async Task<(bool, string)> CleanupFfmpegStreamAsync(IGuild guild)
+    private bool RemoveStoredFfmpegProcess(IGuild guild, out Process? ffmpegProcess) =>
+        _audioStore.RemoveFfmpegProcessFromGuild(guild, out ffmpegProcess);
+
+    private bool DisposeProcess(IGuild guild, IDisposable? ffmpegProcess)
     {
-        _audioLogger.LogWithGuildInfo(guild, "Removing and disposing ffmpeg stream");
-
-        var didRemoveSucceed = _audioStore.RemoveFfmpegStreamFromGuild(guild.Id, out var ffmpegStream);
-        if (!didRemoveSucceed)
-        {
-            var errorMessage = string.Format(FailureToRemoveErrorMessageBase, "ffmpeg stream");
-            return (false, errorMessage);
-        }
-
         try
         {
-            await (ffmpegStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+            _audioLogger.LogWithGuildInfo(guild, "Disposing of ffmpeg process");
+            ffmpegProcess?.Dispose();
+            return true;
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            var errorMessage = string.Format(FailureToDisposeMessageBase, "ffmpeg stream");
-            return (false, errorMessage);
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            return false;
         }
+    }
+
+    #endregion
+
+    #region CleanupFfmpegStreamAsync
+
+    public async Task CleanupFfmpegStreamAsync(IGuild guild)
+    {
+        if (!RemoveStoredFfmpegStream(guild, out var ffmpegStream))
+            return;
+
+        if (!await DisposeFfmpegStream(guild, ffmpegStream))
+            return;
 
         _audioLogger.LogWithGuildInfo(guild, "Removed and disposed of ffmpeg stream");
-
-        return (true, string.Empty);
     }
 
-    public async Task<(bool, string)> CleanupPcmStreamAsync(IGuild guild)
+    private bool RemoveStoredFfmpegStream(IGuild guild, out Stream? ffmpegStream) =>
+        _audioStore.RemoveFfmpegStreamFromGuild(guild, out ffmpegStream);
+
+    private async Task<bool> DisposeFfmpegStream(IGuild guild, IAsyncDisposable? ffmpegStream)
     {
-        _audioLogger.LogWithGuildInfo(guild, "Removing and disposing pcm stream");
-
-        var didRemoveSucceed = _audioStore.RemovePcmStreamFromGuild(guild.Id, out var pcmStream);
-        if (!didRemoveSucceed)
-        {
-            var errorMessage = string.Format(FailureToRemoveErrorMessageBase, "pcm stream");
-            return (false, errorMessage);
-        }
-
         try
         {
-            await (pcmStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+            _audioLogger.LogWithGuildInfo(guild, "Disposing of ffmpeg stream");
+            await (ffmpegStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+            return true;
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            var errorMessage = string.Format(FailureToDisposeMessageBase, "pcm stream");
-            return (false, errorMessage);
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            return false;
         }
-
-        _audioLogger.LogWithGuildInfo(guild, "Removed and disposed of pcm stream");
-
-        return (true, string.Empty);
     }
 
-    public async Task<(bool, string)> CleanupAudioClientAsync(IGuild guild)
+    #endregion
+
+    #region CleanupPcmStreamAsync
+
+    public async Task CleanupPcmStreamAsync(IGuild guild)
     {
-        _audioLogger.LogWithGuildInfo(guild, "Removing, stopping, and disposing audio client");
+        if (!RemoveStoredPcmStream(guild, out var pcmStream))
+            return;
 
-        var didRemoveSucceed = _audioStore.RemoveAudioClientFromGuild(guild.Id, out var audioClient);
-        if (!didRemoveSucceed)
-        {
-            var errorMessage = string.Format(FailureToRemoveErrorMessageBase, "audio client");
-            return (false, errorMessage);
-        }
+        if (!await DisposePcmStream(guild, pcmStream))
+            return;
 
+        _audioLogger.LogWithGuildInfo(guild, "Removed and disposed of pcm stream");
+    }
+
+    private bool RemoveStoredPcmStream(IGuild guild, out AudioOutStream? pcmStream) =>
+        _audioStore.RemovePcmStreamFromGuild(guild, out pcmStream);
+
+    private async Task<bool> DisposePcmStream(IGuild guild, IAsyncDisposable? pcmStream)
+    {
         try
         {
+            _audioLogger.LogWithGuildInfo(guild, "Disposing of pcm stream");
+            await (pcmStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+            return true;
+        }
+        catch (Exception e)
+        {
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region CleanupAudioClientAsync
+
+    public async Task CleanupAudioClientAsync(IGuild guild)
+    {
+        if (!RemoveStoredAudioClient(guild, out var audioClient))
+            return;
+
+        await StopAudioClient(guild, audioClient);
+        await EraseChannelPropertyOfCurrentUser(guild);
+        DisposeAudioClient(guild, audioClient);
+
+        _audioLogger.LogWithGuildInfo(guild, "Removed, stopped, and disposed of audio client");
+    }
+
+    private async Task EraseChannelPropertyOfCurrentUser(IGuild guild)
+    {
+        try
+        {
+            _audioLogger.LogWithGuildInfo(guild, "Obtaining current user");
+            var currentUser = await guild.GetCurrentUserAsync();
+            _audioLogger.LogWithGuildInfo(guild, "Setting channel property to null for current user");
+            await (currentUser?.ModifyAsync(x => x.Channel = null) ?? Task.CompletedTask);
+        }
+        catch (Exception e)
+        {
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+        }
+    }
+
+    private bool RemoveStoredAudioClient(IGuild guild, out IAudioClient? audioClient) =>
+        _audioStore.RemoveAudioClientFromGuild(guild, out audioClient);
+
+    private async Task StopAudioClient(IGuild guild, IAudioClient? audioClient)
+    {
+        try
+        {
+            _audioLogger.LogWithGuildInfo(guild, "Stopping audio client");
             await (audioClient?.StopAsync() ?? Task.CompletedTask);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return (false, "Unable to stop client");
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
+    }
 
-        IGuildUser currentUser;
+    private void DisposeAudioClient(IGuild guild, IDisposable? audioClient)
+    {
         try
         {
-            currentUser = await guild.GetCurrentUserAsync();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return (false, "Unable to retrieve current user");
-        }
-
-        try
-        {
-            await currentUser.ModifyAsync(x => x.Channel = null);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return (false, "Unable to modify channel value of current user");
-        }
-
-        try
-        {
+            _audioLogger.LogWithGuildInfo(guild, "Disposing of audio client");
             audioClient?.Dispose();
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            var errorMessage = string.Format(FailureToDisposeMessageBase, "audio client");
-            return (false, errorMessage);
+            _audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
-
-        _audioLogger.LogWithGuildInfo(guild, "Removed, stopped, and disposed of audio client");
-
-        return (true, string.Empty);
     }
+
+    #endregion
 }

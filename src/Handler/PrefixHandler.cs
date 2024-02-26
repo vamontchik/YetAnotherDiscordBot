@@ -12,7 +12,7 @@ internal class PrefixHandler
     private readonly CommandService _commands;
     private readonly IConfigurationRoot _configuration;
     private readonly IServiceProvider _services;
-    
+
     public PrefixHandler(
         DiscordSocketClient client,
         CommandService commands,
@@ -36,9 +36,12 @@ internal class PrefixHandler
             if (socketMessage is not SocketUserMessage socketUserMessage)
                 return;
 
-            var argumentPosition = 0;
+            PopulatePrefixCharAsNecessary();
+            if (_prefixChar is char.MinValue)
+                return;
 
-            var hasCharPrefix = socketUserMessage.HasCharPrefix(_configuration["prefix"]![0], ref argumentPosition);
+            var argumentPosition = 0;
+            var hasCharPrefix = socketUserMessage.HasCharPrefix(_prefixChar, ref argumentPosition);
             var mentionsBot = socketUserMessage.HasMentionPrefix(_client.CurrentUser, ref argumentPosition);
             if (!hasCharPrefix && !mentionsBot)
                 return;
@@ -48,7 +51,6 @@ internal class PrefixHandler
                 return;
 
             var context = new SocketCommandContext(_client, socketUserMessage);
-
             await _commands.ExecuteAsync(context, argumentPosition, _services);
         }
         catch (Exception e)
@@ -56,4 +58,14 @@ internal class PrefixHandler
             Console.WriteLine(e);
         }
     }
+
+    private void PopulatePrefixCharAsNecessary()
+    {
+        if (_prefixChar is not char.MinValue)
+            return;
+
+        _prefixChar = _configuration["prefix"]?[0] ?? char.MinValue;
+    }
+
+    private char _prefixChar = char.MinValue;
 }

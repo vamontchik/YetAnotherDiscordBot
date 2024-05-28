@@ -59,6 +59,9 @@ internal static class Program
                 .AddSingleton<IAudioDisposer, AudioDisposer>()
                 .AddSingleton<IMusicFileHandler, MusicFileHandler>()
                 .AddSingleton<IAudioLogger, AudioLogger>()
+                .AddSingleton<IAudioCleanupOrganizer, AudioCleanupOrganizer>()
+                .AddSingleton<IFfmpegHandler, FfmpegHandler>()
+                .AddSingleton<IPcmStreamHandler, PcmStreamHandler>()
             )
             .Build();
 

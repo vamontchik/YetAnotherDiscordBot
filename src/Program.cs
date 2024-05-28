@@ -119,12 +119,6 @@ internal static class Program
 
             return Task.CompletedTask;
         };
-
-        client.Ready += () =>
-        {
-            Console.WriteLine("Ready!");
-            return Task.CompletedTask;
-        };
     }
 
     private static void InitializePrefixCommands(IServiceProvider provider)

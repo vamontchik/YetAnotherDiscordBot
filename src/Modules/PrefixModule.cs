@@ -105,6 +105,14 @@ public sealed class PrefixModule(IStatsManager statsManager, IAudioService audio
         await audioService.SkipAudioAsync(Context.Guild);
     }
 
+    [Command("help")]
+    public async Task HandleHelpCommand()
+    {
+        LogMessageWithContext("Help command");
+        var helpCommand = new HelpCommand(Context);
+        await helpCommand.ExecuteAsync();
+    }
+
     private void LogMessageWithContext(string message) =>
         Console.WriteLine(message
                           + $": requested by {Context.User.Username},{Context.User.Id} in {Context.Guild}");

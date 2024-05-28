@@ -6,28 +6,15 @@ using Microsoft.Extensions.Configuration;
 
 namespace DiscordBot.Handler;
 
-internal class PrefixHandler
+public sealed class PrefixHandler(
+    DiscordSocketClient client,
+    CommandService commands,
+    IConfigurationRoot configuration,
+    IServiceProvider services)
 {
-    private readonly DiscordSocketClient _client;
-    private readonly CommandService _commands;
-    private readonly IConfigurationRoot _configuration;
-    private readonly IServiceProvider _services;
+    public void Initialize() => client.MessageReceived += HandleCommandAsync;
 
-    public PrefixHandler(
-        DiscordSocketClient client,
-        CommandService commands,
-        IConfigurationRoot configuration,
-        IServiceProvider services)
-    {
-        _client = client;
-        _commands = commands;
-        _configuration = configuration;
-        _services = services;
-    }
-
-    public void Initialize() => _client.MessageReceived += HandleCommandAsync;
-
-    public void AddModule<T>() => _commands.AddModuleAsync<T>(_services);
+    public void AddModule<T>() => commands.AddModuleAsync<T>(services);
 
     private async Task HandleCommandAsync(SocketMessage socketMessage)
     {
@@ -42,7 +29,7 @@ internal class PrefixHandler
 
             var argumentPosition = 0;
             var hasCharPrefix = socketUserMessage.HasCharPrefix(_prefixChar, ref argumentPosition);
-            var mentionsBot = socketUserMessage.HasMentionPrefix(_client.CurrentUser, ref argumentPosition);
+            var mentionsBot = socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argumentPosition);
             if (!hasCharPrefix && !mentionsBot)
                 return;
 
@@ -50,8 +37,8 @@ internal class PrefixHandler
             if (authorIsBot)
                 return;
 
-            var context = new SocketCommandContext(_client, socketUserMessage);
-            await _commands.ExecuteAsync(context, argumentPosition, _services);
+            var context = new SocketCommandContext(client, socketUserMessage);
+            await commands.ExecuteAsync(context, argumentPosition, services);
         }
         catch (Exception e)
         {
@@ -64,7 +51,7 @@ internal class PrefixHandler
         if (_prefixChar is not char.MinValue)
             return;
 
-        _prefixChar = _configuration["prefix"]?[0] ?? char.MinValue;
+        _prefixChar = configuration["prefix"]?[0] ?? char.MinValue;
     }
 
     private char _prefixChar = char.MinValue;

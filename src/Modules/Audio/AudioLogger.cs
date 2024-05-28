@@ -9,7 +9,7 @@ public interface IAudioLogger
     void LogExceptionWithGuildInfo(IGuild guild, Exception e);
 }
 
-public class AudioLogger : IAudioLogger
+public sealed class AudioLogger : IAudioLogger
 {
     public void LogExceptionWithGuildInfo(IGuild guild, Exception e) =>
         Console.WriteLine($"[{DateTime.Now}][{guild.Name}:{guild.Id}] {e}");

@@ -3,7 +3,6 @@ using Discord.WebSocket;
 using System;
 using System.Threading.Tasks;
 using Discord.Commands;
-using Discord.Interactions;
 using DiscordBot.Handler;
 using DiscordBot.Modules;
 using DiscordBot.Modules.Audio;
@@ -15,7 +14,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace DiscordBot;
 
-internal static class Program
+public static class Program
 {
     public static async Task Main() => await MainAsync();
 

@@ -13,29 +13,22 @@ public interface IMusicFileHandler
     Process? CreateFfmpegProcess();
 }
 
-public sealed class MusicFileHandler : IMusicFileHandler
+public sealed class MusicFileHandler(IAudioLogger audioLogger) : IMusicFileHandler
 {
     private const string FileNameWithoutExtension = "music_file";
     private const string FileNameWithExtension = FileNameWithoutExtension + ".wav";
-
-    private readonly IAudioLogger _audioLogger;
-
-    public MusicFileHandler(IAudioLogger audioLogger)
-    {
-        _audioLogger = audioLogger;
-    }
 
     public async Task DeleteMusicAsync(IGuild guild)
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, "Deleting music file");
+            audioLogger.LogWithGuildInfo(guild, "Deleting music file");
             File.Delete(GetFullPathToDownloadedFile());
-            _audioLogger.LogWithGuildInfo(guild, "Deleted music file");
+            audioLogger.LogWithGuildInfo(guild, "Deleted music file");
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
     }
 
@@ -50,7 +43,7 @@ public sealed class MusicFileHandler : IMusicFileHandler
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, "Starting yt-dlp process");
+            audioLogger.LogWithGuildInfo(guild, "Starting yt-dlp process");
             var process = Process.Start(new ProcessStartInfo
             {
                 CreateNoWindow = true,
@@ -60,16 +53,16 @@ public sealed class MusicFileHandler : IMusicFileHandler
                 Arguments = $"--extract-audio --audio-format wav {url} -o {FileNameWithoutExtension}"
             });
 
-            _audioLogger.LogWithGuildInfo(guild, "Waiting for yt-dlp process to finish download");
+            audioLogger.LogWithGuildInfo(guild, "Waiting for yt-dlp process to finish download");
             await (process?.WaitForExitAsync() ?? Task.CompletedTask);
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return false;
         }
 
-        _audioLogger.LogWithGuildInfo(guild, "Downloaded music file");
+        audioLogger.LogWithGuildInfo(guild, "Downloaded music file");
         return true;
     }
 

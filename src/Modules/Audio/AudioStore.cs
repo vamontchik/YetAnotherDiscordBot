@@ -24,19 +24,12 @@ public interface IAudioStore
     bool RemovePcmStreamFromGuild(IGuild guild, out AudioOutStream? pcmStream);
 }
 
-public sealed class AudioStore : IAudioStore
+public sealed class AudioStore(IAudioLogger audioLogger) : IAudioStore
 {
     private readonly ConcurrentDictionary<ulong, IAudioClient> _connectedAudioClients = new();
     private readonly ConcurrentDictionary<ulong, Process> _connectedFfmpegProcesses = new();
     private readonly ConcurrentDictionary<ulong, Stream> _connectedFfmpegStreams = new();
     private readonly ConcurrentDictionary<ulong, AudioOutStream> _connectedPcmStreams = new();
-
-    private readonly IAudioLogger _audioLogger;
-
-    public AudioStore(IAudioLogger audioLogger)
-    {
-        _audioLogger = audioLogger;
-    }
 
     #region AudioClient
 
@@ -44,12 +37,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Retrieving stored audio client for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Retrieving stored audio client for guild {guild.Name}");
             return _connectedAudioClients[guild.Id];
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return null;
         }
     }
@@ -58,13 +51,13 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Storing audio client for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Storing audio client for guild {guild.Name}");
             _connectedAudioClients[guild.Id] = audioClient;
             return true;
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return false;
         }
     }
@@ -73,12 +66,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Removing stored audio client for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Removing stored audio client for guild {guild.Name}");
             return _connectedAudioClients.Remove(guild.Id, out audioClient);
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             audioClient = null;
             return false;
         }
@@ -92,12 +85,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Retrieving stored ffmpeg process for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Retrieving stored ffmpeg process for guild {guild.Name}");
             return _connectedFfmpegProcesses[guild.Id];
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return null;
         }
     }
@@ -106,13 +99,13 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Storing ffmpeg process for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Storing ffmpeg process for guild {guild.Name}");
             _connectedFfmpegProcesses[guild.Id] = ffmpegProcess;
             return true;
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return false;
         }
     }
@@ -121,12 +114,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Removing stored ffmpeg process for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Removing stored ffmpeg process for guild {guild.Name}");
             return _connectedFfmpegProcesses.Remove(guild.Id, out ffmpegProcess);
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             ffmpegProcess = null;
             return false;
         }
@@ -140,12 +133,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Retrieving stored ffmpeg stream for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Retrieving stored ffmpeg stream for guild {guild.Name}");
             return _connectedFfmpegStreams[guild.Id];
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return null;
         }
     }
@@ -154,13 +147,13 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Storing ffmpeg stream for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Storing ffmpeg stream for guild {guild.Name}");
             _connectedFfmpegStreams[guild.Id] = ffmpegStream;
             return true;
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return false;
         }
     }
@@ -169,12 +162,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Removing stored ffmpeg stream for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Removing stored ffmpeg stream for guild {guild.Name}");
             return _connectedFfmpegStreams.Remove(guild.Id, out ffmpegStream);
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             ffmpegStream = null;
             return false;
         }
@@ -188,12 +181,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Retrieving stored pcm stream for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Retrieving stored pcm stream for guild {guild.Name}");
             return _connectedPcmStreams[guild.Id];
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return null;
         }
     }
@@ -202,13 +195,13 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Storing pcm stream for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Storing pcm stream for guild {guild.Name}");
             _connectedPcmStreams[guild.Id] = pcmStream;
             return true;
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             return false;
         }
     }
@@ -217,12 +210,12 @@ public sealed class AudioStore : IAudioStore
     {
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, $"Removing stored pcm stream for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Removing stored pcm stream for guild {guild.Name}");
             return _connectedPcmStreams.Remove(guild.Id, out pcmStream);
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             pcmStream = null;
             return false;
         }

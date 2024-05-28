@@ -20,22 +20,12 @@ public interface IFfmpegHandler
         Stream? ffmpegStream);
 }
 
-public class FfmpegHandler : IFfmpegHandler
+public sealed class FfmpegHandler(
+    IMusicFileHandler musicFileHandler,
+    IAudioStore audioStore,
+    IAudioLogger audioLogger)
+    : IFfmpegHandler
 {
-    private readonly IMusicFileHandler _musicFileHandler;
-    private readonly IAudioStore _audioStore;
-    private readonly IAudioLogger _audioLogger;
-
-    public FfmpegHandler(
-        IMusicFileHandler musicFileHandler,
-        IAudioStore audioStore,
-        IAudioLogger audioLogger)
-    {
-        _musicFileHandler = musicFileHandler;
-        _audioStore = audioStore;
-        _audioLogger = audioLogger;
-    }
-
     public enum FfmpegCreationResult
     {
         Successful,
@@ -53,27 +43,27 @@ public class FfmpegHandler : IFfmpegHandler
 
         try
         {
-            _audioLogger.LogWithGuildInfo(guild, "Creating ffmpeg process");
-            var createdProcess = _musicFileHandler.CreateFfmpegProcess();
+            audioLogger.LogWithGuildInfo(guild, "Creating ffmpeg process");
+            var createdProcess = musicFileHandler.CreateFfmpegProcess();
             if (createdProcess is null)
             {
-                _audioLogger.LogWithGuildInfo(guild, "createdProcess is null");
+                audioLogger.LogWithGuildInfo(guild, "createdProcess is null");
                 return FfmpegCreationResult.Failed;
             }
 
-            _audioLogger.LogWithGuildInfo(guild, "Retrieving base stream");
+            audioLogger.LogWithGuildInfo(guild, "Retrieving base stream");
             ffmpegProcess = createdProcess;
             ffmpegStream = createdProcess.StandardOutput.BaseStream;
         }
         catch (Exception e)
         {
-            _audioLogger.LogExceptionWithGuildInfo(guild, e);
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
             ffmpegProcess = null;
             ffmpegStream = null;
             return FfmpegCreationResult.Failed;
         }
 
-        _audioLogger.LogWithGuildInfo(guild, $"Created ffmpeg stream of {url} in {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, $"Created ffmpeg stream of {url} in {guild.Name}");
         return FfmpegCreationResult.Successful;
     }
 
@@ -86,7 +76,7 @@ public class FfmpegHandler : IFfmpegHandler
         return result != FfmpegCreationResult.Failed &&
                ffmpegProcess is not null &&
                ffmpegStream is not null &&
-               _audioStore.AddFfmpegProcessForGuild(guild, ffmpegProcess) &&
-               _audioStore.AddFfmpegStreamForGuild(guild, ffmpegStream);
+               audioStore.AddFfmpegProcessForGuild(guild, ffmpegProcess) &&
+               audioStore.AddFfmpegStreamForGuild(guild, ffmpegStream);
     }
 }

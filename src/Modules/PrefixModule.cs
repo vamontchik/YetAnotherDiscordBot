@@ -8,20 +8,9 @@ using DiscordBot.Modules.RockPaperScissors;
 
 namespace DiscordBot.Modules;
 
-public sealed class PrefixModule : ModuleBase<SocketCommandContext>
+public sealed class PrefixModule(IStatsManager statsManager, IAudioService audioService)
+    : ModuleBase<SocketCommandContext>
 {
-    private readonly IStatsManager _statsManager;
-    private readonly IAudioService _audioService;
-
-    public PrefixModule(
-        IStatsManager statsManager,
-        IAudioService audioService)
-    {
-        _statsManager = statsManager;
-        _audioService = audioService;
-    }
-
-
     [Command("ping")]
     public async Task HandlePingCommand()
     {
@@ -56,7 +45,7 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         {
             Argument = argument,
             SocketCommandContext = Context,
-            StatsManager = _statsManager
+            StatsManager = statsManager
         };
         await rpsCommand.ExecuteAsync();
     }
@@ -74,14 +63,14 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Join command");
-        await _audioService.JoinAudioAsync(Context.Guild, voiceChannel);
+        await audioService.JoinAudioAsync(Context.Guild, voiceChannel);
     }
 
     [Command("leave")]
     public async Task HandleLeaveCommand()
     {
         LogMessageWithContext("Leave command");
-        await _audioService.LeaveAudioAsync(Context.Guild);
+        await audioService.LeaveAudioAsync(Context.Guild);
     }
 
     [Command("play")]
@@ -106,14 +95,14 @@ public sealed class PrefixModule : ModuleBase<SocketCommandContext>
         }
 
         LogMessageWithContext("Play command");
-        await _audioService.SendAudioAsync(Context.Guild, url);
+        await audioService.SendAudioAsync(Context.Guild, url);
     }
 
     [Command("skip")]
     public async Task HandleSkipCommand()
     {
         LogMessageWithContext("Skip command");
-        await _audioService.SkipAudioAsync(Context.Guild);
+        await audioService.SkipAudioAsync(Context.Guild);
     }
 
     private void LogMessageWithContext(string message) =>

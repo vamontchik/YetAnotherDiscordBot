@@ -37,15 +37,6 @@ internal static class Program
                     MessageCacheSize = 100,
                     LogLevel = LogSeverity.Info
                 }))
-                .AddSingleton(serviceProvider =>
-                    new InteractionService(
-                        serviceProvider.GetRequiredService<DiscordSocketClient>(),
-                        new InteractionServiceConfig
-                        {
-                            LogLevel = LogSeverity.Info,
-                            DefaultRunMode = Discord.Interactions.RunMode.Async
-                        }))
-                .AddSingleton<InteractionHandler>()
                 .AddSingleton(_ => new CommandService(new CommandServiceConfig
                 {
                     LogLevel = LogSeverity.Info,
@@ -59,6 +50,9 @@ internal static class Program
                 .AddSingleton<IAudioDisposer, AudioDisposer>()
                 .AddSingleton<IMusicFileHandler, MusicFileHandler>()
                 .AddSingleton<IAudioLogger, AudioLogger>()
+                .AddSingleton<IAudioCleanupOrganizer, AudioCleanupOrganizer>()
+                .AddSingleton<IFfmpegHandler, FfmpegHandler>()
+                .AddSingleton<IPcmStreamHandler, PcmStreamHandler>()
             )
             .Build();
 
@@ -70,14 +64,12 @@ internal static class Program
         using var serviceScope = host.Services.CreateScope();
         var provider = serviceScope.ServiceProvider;
 
-        var interactionService = await InitializeInteractions(provider);
         InitializePrefixCommands(provider);
         var client = provider.GetRequiredService<DiscordSocketClient>();
         var config = provider.GetRequiredService<IConfigurationRoot>();
         var commandService = provider.GetRequiredService<CommandService>();
 
-        SetupClientCallbacks(client, interactionService);
-        SetupInteractionServiceCallbacks(interactionService);
+        SetupClientCallbacks(client);
         SetupCommandServiceCallbacks(commandService);
 
         await client.LoginAsync(TokenType.Bot, config["token"]);
@@ -104,24 +96,7 @@ internal static class Program
         };
     }
 
-    private static void SetupInteractionServiceCallbacks(InteractionService interactionService)
-    {
-        interactionService.Log += message =>
-        {
-            if (message.Exception is CommandException cmdException)
-            {
-                Console.WriteLine($"[Command/{message.Severity}] {cmdException.Command.Aliases[0]}"
-                                  + $" failed to execute in {cmdException.Context.Channel}.");
-                Console.WriteLine(cmdException);
-            }
-            else
-                Console.WriteLine($"[General/{message.Severity}] {message}");
-
-            return Task.CompletedTask;
-        };
-    }
-
-    private static void SetupClientCallbacks(DiscordSocketClient client, InteractionService interactionService)
+    private static void SetupClientCallbacks(DiscordSocketClient client)
     {
         client.Log += message =>
         {
@@ -136,15 +111,6 @@ internal static class Program
 
             return Task.CompletedTask;
         };
-        client.Ready += async () => await interactionService.RegisterCommandsGloballyAsync();
-    }
-
-    private static async Task<InteractionService> InitializeInteractions(IServiceProvider provider)
-    {
-        var interactionService = provider.GetRequiredService<InteractionService>();
-        var interactionHandler = provider.GetRequiredService<InteractionHandler>();
-        await interactionHandler.InitializeAsync();
-        return interactionService;
     }
 
     private static void InitializePrefixCommands(IServiceProvider provider)

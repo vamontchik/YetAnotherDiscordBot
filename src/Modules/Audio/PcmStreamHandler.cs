@@ -8,28 +8,18 @@ namespace DiscordBot.Modules.Audio;
 
 public interface IPcmStreamHandler
 {
-    Task<AudioOutStream?> CreatePcmStreamAsync(
-        string url,
-        IGuild guild,
-        IAudioClient client);
-
-    Task FlushPcmStreamAsync(
-        IGuild guild,
-        string url,
-        Stream pcmStream);
+    Task<AudioOutStream?> CreatePcmStreamAsync(IGuild guild, IAudioClient client);
+    Task FlushPcmStreamAsync(IGuild guild, Stream pcmStream);
 }
 
 public sealed class PcmStreamHandler(IAudioStore audioStore, IAudioLogger audioLogger) : IPcmStreamHandler
 {
-    public Task<AudioOutStream?> CreatePcmStreamAsync(
-        string url,
-        IGuild guild,
-        IAudioClient client)
+    public Task<AudioOutStream?> CreatePcmStreamAsync(IGuild guild, IAudioClient client)
     {
         AudioOutStream pcmStream;
         try
         {
-            audioLogger.LogWithGuildInfo(guild, $"Creating pcm stream of {url} in {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, $"Creating pcm stream");
             pcmStream = client.CreatePCMStream(AudioApplication.Mixed);
         }
         catch (Exception e)
@@ -43,7 +33,7 @@ public sealed class PcmStreamHandler(IAudioStore audioStore, IAudioLogger audioL
             : Task.FromResult<AudioOutStream?>(null);
     }
 
-    public async Task FlushPcmStreamAsync(IGuild guild, string url, Stream pcmStream)
+    public async Task FlushPcmStreamAsync(IGuild guild, Stream pcmStream)
     {
         try
         {

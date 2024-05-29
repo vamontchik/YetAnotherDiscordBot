@@ -9,7 +9,6 @@ public interface IFfmpegHandler
 {
     public FfmpegHandler.FfmpegCreationResult SetupFfmpeg(
         IGuild guild,
-        string url,
         out Process? ffmpegProcess,
         out Stream? ffmpegStream);
 
@@ -34,7 +33,6 @@ public sealed class FfmpegHandler(
 
     public FfmpegCreationResult SetupFfmpeg(
         IGuild guild,
-        string url,
         out Process? ffmpegProcess,
         out Stream? ffmpegStream)
     {

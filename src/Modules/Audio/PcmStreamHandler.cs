@@ -43,14 +43,11 @@ public sealed class PcmStreamHandler(IAudioStore audioStore, IAudioLogger audioL
             : Task.FromResult<AudioOutStream?>(null);
     }
 
-    public async Task FlushPcmStreamAsync(
-        IGuild guild,
-        string url,
-        Stream pcmStream)
+    public async Task FlushPcmStreamAsync(IGuild guild, string url, Stream pcmStream)
     {
         try
         {
-            audioLogger.LogWithGuildInfo(guild, $"Flushing pcm stream for {url} in {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, "Flushing pcm stream");
             await pcmStream.FlushAsync().ConfigureAwait(false);
         }
         catch (Exception e)

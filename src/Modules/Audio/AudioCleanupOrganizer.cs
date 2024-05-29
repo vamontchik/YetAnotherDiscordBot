@@ -21,12 +21,10 @@ public sealed class AudioCleanupOrganizer(
 {
     public async Task FullDisconnectAndCleanup(IGuild guild)
     {
-        audioLogger.LogWithGuildInfo(
-            guild,
-            $"Checking if bot is connected to a channel in guild {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, "Checking if bot is in a channel");
         if (audioStore.GetAudioClientForGuild(guild) is null)
         {
-            audioLogger.LogWithGuildInfo(guild, $"Bot is not in a channel for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, "Bot is not in a channel");
             return;
         }
 

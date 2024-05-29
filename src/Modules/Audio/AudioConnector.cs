@@ -18,10 +18,10 @@ public sealed class AudioConnector(
 {
     public async Task ConnectAsync(IGuild guild, IVoiceChannel voiceChannel)
     {
-        audioLogger.LogWithGuildInfo(guild, $"Checking if bot is already in guild {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, "Checking if bot is in a channel");
         if (audioStore.GetAudioClientForGuild(guild) is not null)
         {
-            audioLogger.LogWithGuildInfo(guild, $"Bot already is in a channel for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, "Bot already is in a channel");
             return;
         }
 
@@ -36,7 +36,7 @@ public sealed class AudioConnector(
             return;
         }
 
-        audioLogger.LogWithGuildInfo(guild, $"Connected to voice on {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, "Connected to voice");
     }
 
     private async Task<IAudioClient?> ConnectToVoiceAsync(IGuild guild, IAudioChannel voiceChannel)

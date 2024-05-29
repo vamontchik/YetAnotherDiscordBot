@@ -52,7 +52,7 @@ public sealed class AudioService(
             return;
         }
 
-        var result = ffmpegHandler.SetupFfmpeg(guild, url, out var ffmpegProcess, out var ffmpegStream);
+        var result = ffmpegHandler.SetupFfmpeg(guild, out var ffmpegProcess, out var ffmpegStream);
         if (!ffmpegHandler.CheckAndStore(guild, result, ffmpegProcess, ffmpegStream))
         {
             await audioCleanupOrganizer.FfmpegSetupFailureCleanup(guild).ConfigureAwait(false);
@@ -68,7 +68,7 @@ public sealed class AudioService(
             return;
         }
 
-        await SendAudioAsync(guild, url, ffmpegStream!, pcmStream).ConfigureAwait(false);
+        await SendAudioAsync(guild, ffmpegStream!, pcmStream).ConfigureAwait(false);
         await pcmStreamHandler.FlushPcmStreamAsync(guild, url, pcmStream).ConfigureAwait(false);
         await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
         SetToNoSongPlayingStatus(guild);
@@ -95,15 +95,11 @@ public sealed class AudioService(
         }
     }
 
-    private async Task SendAudioAsync(
-        IGuild guild,
-        string url,
-        Stream ffmpegStream,
-        Stream pcmStream)
+    private async Task SendAudioAsync(IGuild guild, Stream ffmpegStream, Stream pcmStream)
     {
         try
         {
-            audioLogger.LogWithGuildInfo(guild, $"Copying music bytes to pcm stream for {url} in {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, "Copying music bytes to pcm stream");
             await ffmpegStream.CopyToAsync(pcmStream).ConfigureAwait(false);
         }
         catch (Exception e)
@@ -135,7 +131,7 @@ public sealed class AudioService(
     {
         lock (IsPlayingLock)
         {
-            audioLogger.LogWithGuildInfo(guild, "Setting _isPlaying to false");
+            audioLogger.LogWithGuildInfo(guild, "Setting _isPlaying to False");
             _isPlaying = false;
         }
     }
@@ -144,7 +140,7 @@ public sealed class AudioService(
     {
         lock (IsPlayingLock)
         {
-            audioLogger.LogWithGuildInfo(guild, "Setting _isPlaying to true");
+            audioLogger.LogWithGuildInfo(guild, "Setting _isPlaying to True");
             _isPlaying = true;
         }
     }

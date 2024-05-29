@@ -18,18 +18,19 @@ public sealed class MusicFileHandler(IAudioLogger audioLogger) : IMusicFileHandl
     private const string FileNameWithoutExtension = "music_file";
     private const string FileNameWithExtension = FileNameWithoutExtension + ".wav";
 
-    public async Task DeleteMusicAsync(IGuild guild)
+    public Task DeleteMusicAsync(IGuild guild)
     {
         try
         {
             audioLogger.LogWithGuildInfo(guild, "Deleting music file");
             File.Delete(GetFullPathToDownloadedFile());
-            audioLogger.LogWithGuildInfo(guild, "Deleted music file");
         }
         catch (Exception e)
         {
             audioLogger.LogExceptionWithGuildInfo(guild, e);
         }
+
+        return Task.CompletedTask;
     }
 
     private static string GetFullPathToDownloadedFile()
@@ -53,8 +54,15 @@ public sealed class MusicFileHandler(IAudioLogger audioLogger) : IMusicFileHandl
                 Arguments = $"--extract-audio --audio-format wav {url} -o {FileNameWithoutExtension}"
             });
 
-            audioLogger.LogWithGuildInfo(guild, "Waiting for yt-dlp process to finish download");
-            await (process?.WaitForExitAsync() ?? Task.CompletedTask);
+            if (process is not null)
+            {
+                audioLogger.LogWithGuildInfo(guild, "Waiting for yt-dlp process to finish download");
+                await process.WaitForExitAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                audioLogger.LogWithGuildInfo(guild, "yt-dlp process returned null");
+            }
         }
         catch (Exception e)
         {
@@ -62,7 +70,6 @@ public sealed class MusicFileHandler(IAudioLogger audioLogger) : IMusicFileHandl
             return false;
         }
 
-        audioLogger.LogWithGuildInfo(guild, "Downloaded music file");
         return true;
     }
 

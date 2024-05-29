@@ -9,7 +9,6 @@ public interface IFfmpegHandler
 {
     public FfmpegHandler.FfmpegCreationResult SetupFfmpeg(
         IGuild guild,
-        string url,
         out Process? ffmpegProcess,
         out Stream? ffmpegStream);
 
@@ -34,7 +33,6 @@ public sealed class FfmpegHandler(
 
     public FfmpegCreationResult SetupFfmpeg(
         IGuild guild,
-        string url,
         out Process? ffmpegProcess,
         out Stream? ffmpegStream)
     {
@@ -63,7 +61,6 @@ public sealed class FfmpegHandler(
             return FfmpegCreationResult.Failed;
         }
 
-        audioLogger.LogWithGuildInfo(guild, $"Created ffmpeg stream of {url} in {guild.Name}");
         return FfmpegCreationResult.Successful;
     }
 

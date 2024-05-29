@@ -32,11 +32,11 @@ public sealed class RpsGameHandler
     
     public async Task DoGameAsync()
     {
-        var bot = await CreateBotPlayerAsync();
-        var player = await CreateUserPlayerAsync();
-        var gameResult = await CalculateGameResultAsync(bot, player);
-        await SendGameResultAsync(gameResult, bot, player);
-        await StatsManager.UpdateAsync(gameResult);
+        var bot = await CreateBotPlayerAsync().ConfigureAwait(false);
+        var player = await CreateUserPlayerAsync().ConfigureAwait(false);
+        var gameResult = await CalculateGameResultAsync(bot, player).ConfigureAwait(false);
+        await SendGameResultAsync(gameResult, bot, player).ConfigureAwait(false);
+        await StatsManager.UpdateAsync(gameResult).ConfigureAwait(false);
     }
     
     private Task<RpsPlayer> CreateBotPlayerAsync()
@@ -73,8 +73,11 @@ public sealed class RpsGameHandler
     
     private async Task SendGameResultAsync(GameResult gameResult, RpsPlayer bot, RpsPlayer user)
     {
-        var winner = await gameResult.GetWinnerAsync();
+        var winner = await gameResult.GetWinnerAsync().ConfigureAwait(false);
         var resultStr = winner is not null ? $"Result: {winner.Name} Wins!" : "Result: Tie";
-        await SocketCommandContext.Message.ReplyAsync($"User: {user.Type}, Bot: {bot.Type}, {resultStr}");
+        await SocketCommandContext
+            .Message
+            .ReplyAsync($"User: {user.Type}, Bot: {bot.Type}, {resultStr}")
+            .ConfigureAwait(false);
     }
 }

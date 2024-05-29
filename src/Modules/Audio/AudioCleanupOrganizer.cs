@@ -21,12 +21,10 @@ public sealed class AudioCleanupOrganizer(
 {
     public async Task FullDisconnectAndCleanup(IGuild guild)
     {
-        audioLogger.LogWithGuildInfo(
-            guild,
-            $"Checking if bot is connected to a channel in guild {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, "Checking if bot is in a channel");
         if (audioStore.GetAudioClientForGuild(guild) is null)
         {
-            audioLogger.LogWithGuildInfo(guild, $"Bot is not in a channel for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, "Bot is not in a channel");
             return;
         }
 
@@ -35,23 +33,20 @@ public sealed class AudioCleanupOrganizer(
         var ffmpegProcessTask = audioDisposer.CleanupFfmpegProcessAsync(guild);
         var musicFileTask = musicFileHandler.DeleteMusicAsync(guild);
         var audioClientTask = audioDisposer.CleanupAudioClientAsync(guild);
-        await Task.WhenAll(pcmStreamTask, ffmpegStreamTask, ffmpegProcessTask, musicFileTask, audioClientTask);
-
-        var message =
-            $"Disconnected from voice on {guild.Name}, " +
-            $"disposed of all stream(s)/process(es)/client(s), " +
-            $"and deleted music file";
-        audioLogger.LogWithGuildInfo(guild, message);
+        await Task
+            .WhenAll(pcmStreamTask, ffmpegStreamTask, ffmpegProcessTask, musicFileTask, audioClientTask)
+            .ConfigureAwait(false);
     }
 
-    public async Task MusicDownloadFailureCleanup(IGuild guild) => await musicFileHandler.DeleteMusicAsync(guild);
+    public async Task MusicDownloadFailureCleanup(IGuild guild) => 
+        await musicFileHandler.DeleteMusicAsync(guild).ConfigureAwait(false);
 
     public async Task FfmpegSetupFailureCleanup(IGuild guild)
     {
         var streamTask = audioDisposer.CleanupFfmpegStreamAsync(guild);
         var processTask = audioDisposer.CleanupFfmpegProcessAsync(guild);
         var musicFileTask = musicFileHandler.DeleteMusicAsync(guild);
-        await Task.WhenAll(streamTask, processTask, musicFileTask);
+        await Task.WhenAll(streamTask, processTask, musicFileTask).ConfigureAwait(false);
     }
 
     public async Task PcmStreamSetupFailureCleanup(IGuild guild)
@@ -60,8 +55,8 @@ public sealed class AudioCleanupOrganizer(
         var ffmpegStreamTask = audioDisposer.CleanupFfmpegStreamAsync(guild);
         var ffmpegProcessTask = audioDisposer.CleanupFfmpegProcessAsync(guild);
         var musicFileTask = musicFileHandler.DeleteMusicAsync(guild);
-        await Task.WhenAll(pcmStreamTask, ffmpegStreamTask, ffmpegProcessTask, musicFileTask);
+        await Task.WhenAll(pcmStreamTask, ffmpegStreamTask, ffmpegProcessTask, musicFileTask).ConfigureAwait(false);
     }
 
-    public async Task PostSongCleanup(IGuild guild) => await PcmStreamSetupFailureCleanup(guild);
+    public async Task PostSongCleanup(IGuild guild) => await PcmStreamSetupFailureCleanup(guild).ConfigureAwait(false);
 }

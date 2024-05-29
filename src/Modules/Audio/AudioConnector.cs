@@ -18,25 +18,25 @@ public sealed class AudioConnector(
 {
     public async Task ConnectAsync(IGuild guild, IVoiceChannel voiceChannel)
     {
-        audioLogger.LogWithGuildInfo(guild, $"Checking if bot is already in guild {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, "Checking if bot is in a channel");
         if (audioStore.GetAudioClientForGuild(guild) is not null)
         {
-            audioLogger.LogWithGuildInfo(guild, $"Bot already is in a channel for guild {guild.Name}");
+            audioLogger.LogWithGuildInfo(guild, "Bot already is in a channel");
             return;
         }
 
-        var audioClient = await ConnectToVoiceAsync(guild, voiceChannel);
+        var audioClient = await ConnectToVoiceAsync(guild, voiceChannel).ConfigureAwait(false);
         if (audioClient is null)
             return;
 
         var didAddSucceed = audioStore.AddAudioClientForGuild(guild, audioClient);
         if (!didAddSucceed)
         {
-            await audioDisposer.CleanupAudioClientAsync(guild);
+            await audioDisposer.CleanupAudioClientAsync(guild).ConfigureAwait(false);
             return;
         }
 
-        audioLogger.LogWithGuildInfo(guild, $"Connected to voice on {guild.Name}");
+        audioLogger.LogWithGuildInfo(guild, "Connected to voice");
     }
 
     private async Task<IAudioClient?> ConnectToVoiceAsync(IGuild guild, IAudioChannel voiceChannel)
@@ -44,7 +44,7 @@ public sealed class AudioConnector(
         try
         {
             audioLogger.LogWithGuildInfo(guild, "Connecting to voice channel");
-            return await voiceChannel.ConnectAsync();
+            return await voiceChannel.ConnectAsync().ConfigureAwait(false);
         }
         catch (Exception e)
         {

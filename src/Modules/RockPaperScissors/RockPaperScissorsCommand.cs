@@ -23,7 +23,7 @@ public sealed class RockPaperScissorsCommand
                 SocketCommandContext = SocketCommandContext,
                 StatsManager = StatsManager
             };
-            await statsCommand.DoAsync();
+            await statsCommand.DoAsync().ConfigureAwait(false);
             return;
         }
 
@@ -35,10 +35,13 @@ public sealed class RockPaperScissorsCommand
         };
         if (!gameHandler.ValidUserChoice())
         {
-            await SocketCommandContext.Message.ReplyAsync("That's not a rock, paper, or scissors!");
+            await SocketCommandContext
+                .Message
+                .ReplyAsync("That's not a rock, paper, or scissors!")
+                .ConfigureAwait(false);
             return;
         }
 
-        await gameHandler.DoGameAsync();
+        await gameHandler.DoGameAsync().ConfigureAwait(false);
     }
 }

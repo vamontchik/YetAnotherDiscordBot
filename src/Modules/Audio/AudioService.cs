@@ -24,11 +24,11 @@ public sealed class AudioService(
     : IAudioService
 {
     public async Task JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel) =>
-        await audioConnector.ConnectAsync(guild, voiceChannel);
+        await audioConnector.ConnectAsync(guild, voiceChannel).ConfigureAwait(false);
 
     public async Task LeaveAudioAsync(IGuild guild)
     {
-        await audioCleanupOrganizer.FullDisconnectAndCleanup(guild);
+        await audioCleanupOrganizer.FullDisconnectAndCleanup(guild).ConfigureAwait(false);
         SetToNoSongPlayingStatus(guild);
     }
 
@@ -44,10 +44,10 @@ public sealed class AudioService(
             return;
         }
 
-        var didMusicDownload = await musicFileHandler.DownloadMusicAsync(guild, url);
+        var didMusicDownload = await musicFileHandler.DownloadMusicAsync(guild, url).ConfigureAwait(false);
         if (!didMusicDownload)
         {
-            await audioCleanupOrganizer.MusicDownloadFailureCleanup(guild);
+            await audioCleanupOrganizer.MusicDownloadFailureCleanup(guild).ConfigureAwait(false);
             SetToNoSongPlayingStatus(guild);
             return;
         }
@@ -55,22 +55,22 @@ public sealed class AudioService(
         var result = ffmpegHandler.SetupFfmpeg(guild, url, out var ffmpegProcess, out var ffmpegStream);
         if (!ffmpegHandler.CheckAndStore(guild, result, ffmpegProcess, ffmpegStream))
         {
-            await audioCleanupOrganizer.FfmpegSetupFailureCleanup(guild);
+            await audioCleanupOrganizer.FfmpegSetupFailureCleanup(guild).ConfigureAwait(false);
             SetToNoSongPlayingStatus(guild);
             return;
         }
 
-        var pcmStream = await pcmStreamHandler.CreatePcmStreamAsync(url, guild, audioClient);
+        var pcmStream = await pcmStreamHandler.CreatePcmStreamAsync(url, guild, audioClient).ConfigureAwait(false);
         if (pcmStream is null)
         {
-            await audioCleanupOrganizer.PcmStreamSetupFailureCleanup(guild);
+            await audioCleanupOrganizer.PcmStreamSetupFailureCleanup(guild).ConfigureAwait(false);
             SetToNoSongPlayingStatus(guild);
             return;
         }
 
-        await SendAudioAsync(guild, url, ffmpegStream!, pcmStream);
-        await pcmStreamHandler.FlushPcmStreamAsync(guild, url, pcmStream);
-        await audioCleanupOrganizer.PostSongCleanup(guild);
+        await SendAudioAsync(guild, url, ffmpegStream!, pcmStream).ConfigureAwait(false);
+        await pcmStreamHandler.FlushPcmStreamAsync(guild, url, pcmStream).ConfigureAwait(false);
+        await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
         SetToNoSongPlayingStatus(guild);
     }
 
@@ -104,8 +104,7 @@ public sealed class AudioService(
         try
         {
             audioLogger.LogWithGuildInfo(guild, $"Copying music bytes to pcm stream for {url} in {guild.Name}");
-            await ffmpegStream.CopyToAsync(pcmStream);
-            audioLogger.LogWithGuildInfo(guild, $"Copied music bytes to pcm stream for {url} in {guild.Name}");
+            await ffmpegStream.CopyToAsync(pcmStream).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -115,7 +114,7 @@ public sealed class AudioService(
 
     public async Task SkipAudioAsync(IGuild guild)
     {
-        await audioCleanupOrganizer.PostSongCleanup(guild);
+        await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
         SetToNoSongPlayingStatus(guild);
     }
 

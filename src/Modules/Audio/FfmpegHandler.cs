@@ -63,7 +63,6 @@ public sealed class FfmpegHandler(
             return FfmpegCreationResult.Failed;
         }
 
-        audioLogger.LogWithGuildInfo(guild, $"Created ffmpeg stream of {url} in {guild.Name}");
         return FfmpegCreationResult.Successful;
     }
 

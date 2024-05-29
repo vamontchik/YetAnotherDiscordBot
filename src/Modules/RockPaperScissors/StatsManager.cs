@@ -17,30 +17,31 @@ public sealed class StatsManager : IStatsManager
 
     public async Task UpdateAsync(GameResult gameResult)
     {
-        var winner = await gameResult.GetWinnerAsync();
+        var winner = await gameResult.GetWinnerAsync().ConfigureAwait(false);
         if (winner is null)
         {
-            await UpdateBothForTieAsync(new List<RpsPlayer> { gameResult.P1, gameResult.P2 });
+            await UpdateBothForTieAsync(new List<RpsPlayer> { gameResult.P1, gameResult.P2 })
+                .ConfigureAwait(false);
         }
         else
         {
-            var loser = await gameResult.GetLoserAsync()
+            var loser = await gameResult.GetLoserAsync().ConfigureAwait(false)
                         ?? throw new InvalidOperationException("Unable to obtain a loser");
-            await UpdatePlayerAsync(winner, StatResultType.Win);
-            await UpdatePlayerAsync(loser, StatResultType.Loss);
+            await UpdatePlayerAsync(winner, StatResultType.Win).ConfigureAwait(false);
+            await UpdatePlayerAsync(loser, StatResultType.Loss).ConfigureAwait(false);
         }
     }
 
     private async Task UpdateBothForTieAsync(IEnumerable<RpsPlayer> players)
     {
         foreach (var p in players)
-            await UpdatePlayerAsync(p, StatResultType.Tie);
+            await UpdatePlayerAsync(p, StatResultType.Tie).ConfigureAwait(false);
     }
 
     private async Task UpdatePlayerAsync(RpsPlayer p, StatResultType statType)
     {
         var statForPlayer = GetFromDictOrNew(p.Id);
-        await statForPlayer.UpdateAsync(p.Type, statType);
+        await statForPlayer.UpdateAsync(p.Type, statType).ConfigureAwait(false);
     }
 
     private Stat GetFromDictOrNew(ulong id)

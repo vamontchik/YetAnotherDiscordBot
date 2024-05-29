@@ -38,7 +38,7 @@ public sealed class PrefixHandler(
                 return;
 
             var context = new SocketCommandContext(client, socketUserMessage);
-            await commands.ExecuteAsync(context, argumentPosition, services);
+            await commands.ExecuteAsync(context, argumentPosition, services).ConfigureAwait(false);
         }
         catch (Exception e)
         {

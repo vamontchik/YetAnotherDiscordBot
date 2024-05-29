@@ -7,7 +7,7 @@ namespace DiscordBot.Modules;
 
 public sealed class HelpCommand(SocketCommandContext context)
 {
-    private readonly IEnumerable<string> _commands = 
+    private readonly IEnumerable<string> _commands =
     [
         "ping",
         "rps",
@@ -18,6 +18,8 @@ public sealed class HelpCommand(SocketCommandContext context)
         "help"
     ];
 
-    public async Task ExecuteAsync() => 
-        await context.Message.ReplyAsync($"Allowed: {string.Join(",", _commands)}");
+    public async Task ExecuteAsync() => await context
+        .Message
+        .ReplyAsync($"Allowed: {string.Join(",", _commands)}")
+        .ConfigureAwait(false);
 }

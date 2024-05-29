@@ -16,7 +16,7 @@ namespace DiscordBot;
 
 public static class Program
 {
-    public static async Task Main() => await MainAsync();
+    public static async Task Main() => await MainAsync().ConfigureAwait(false);
 
     private static async Task MainAsync()
     {
@@ -55,7 +55,7 @@ public static class Program
             )
             .Build();
 
-        await RunAsync(host);
+        await RunAsync(host).ConfigureAwait(false);
     }
 
     private static async Task RunAsync(IHost host)
@@ -71,11 +71,11 @@ public static class Program
         SetupClientCallbacks(client);
         SetupCommandServiceCallbacks(commandService);
 
-        await client.LoginAsync(TokenType.Bot, config["token"]);
+        await client.LoginAsync(TokenType.Bot, config["token"]).ConfigureAwait(false);
 
-        await client.StartAsync();
+        await client.StartAsync().ConfigureAwait(false);
 
-        await Task.Delay(-1);
+        await Task.Delay(-1).ConfigureAwait(false);
     }
 
     private static void SetupCommandServiceCallbacks(CommandService commandService)

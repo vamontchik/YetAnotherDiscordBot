@@ -25,14 +25,14 @@ public sealed class AudioConnector(
             return;
         }
 
-        var audioClient = await ConnectToVoiceAsync(guild, voiceChannel);
+        var audioClient = await ConnectToVoiceAsync(guild, voiceChannel).ConfigureAwait(false);
         if (audioClient is null)
             return;
 
         var didAddSucceed = audioStore.AddAudioClientForGuild(guild, audioClient);
         if (!didAddSucceed)
         {
-            await audioDisposer.CleanupAudioClientAsync(guild);
+            await audioDisposer.CleanupAudioClientAsync(guild).ConfigureAwait(false);
             return;
         }
 
@@ -44,7 +44,7 @@ public sealed class AudioConnector(
         try
         {
             audioLogger.LogWithGuildInfo(guild, "Connecting to voice channel");
-            return await voiceChannel.ConnectAsync();
+            return await voiceChannel.ConnectAsync().ConfigureAwait(false);
         }
         catch (Exception e)
         {

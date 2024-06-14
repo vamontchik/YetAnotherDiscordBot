@@ -9,7 +9,7 @@ namespace DiscordBot.Handler;
 internal sealed class PrefixHandler(
     DiscordSocketClient client,
     CommandService commands,
-    IConfigurationRoot configuration, // needs to be IConfigurationRoot, not IConfiguration, for yaml reading lib
+    IConfigurationRoot configuration, // needs to be IConfigurationRoot b/c passed to services as IConfigurationRoot type
     IServiceProvider services)
 {
     public void Initialize() => client.MessageReceived += HandleCommandAsync;

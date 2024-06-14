@@ -3,7 +3,7 @@ using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-internal interface IAudioCleanupOrganizer
+public interface IAudioCleanupOrganizer
 {
     public Task FullDisconnectAndCleanup(IGuild guild);
     public Task MusicDownloadFailureCleanup(IGuild guild);
@@ -12,7 +12,7 @@ internal interface IAudioCleanupOrganizer
     public Task PostSongCleanup(IGuild guild);
 }
 
-internal sealed class AudioCleanupOrganizer(
+public sealed class AudioCleanupOrganizer(
     IMusicFileHandler musicFileHandler,
     IAudioDisposer audioDisposer,
     IAudioLogger audioLogger,

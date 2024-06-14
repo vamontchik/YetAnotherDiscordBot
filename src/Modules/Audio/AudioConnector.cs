@@ -5,12 +5,12 @@ using Discord.Audio;
 
 namespace DiscordBot.Modules.Audio;
 
-internal interface IAudioConnector
+public interface IAudioConnector
 {
     Task ConnectAsync(IGuild guild, IVoiceChannel voiceChannel);
 }
 
-internal sealed class AudioConnector(
+public sealed class AudioConnector(
     IAudioStore audioStore,
     IAudioDisposer audioDisposer,
     IAudioLogger audioLogger)

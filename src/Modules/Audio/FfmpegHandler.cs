@@ -5,7 +5,7 @@ using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-internal interface IFfmpegHandler
+public interface IFfmpegHandler
 {
     public FfmpegHandler.FfmpegCreationResult SetupFfmpeg(
         IGuild guild,
@@ -19,7 +19,7 @@ internal interface IFfmpegHandler
         Stream? ffmpegStream);
 }
 
-internal sealed class FfmpegHandler(
+public sealed class FfmpegHandler(
     IMusicFileHandler musicFileHandler,
     IAudioStore audioStore,
     IAudioLogger audioLogger)

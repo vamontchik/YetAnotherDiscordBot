@@ -5,7 +5,7 @@ using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-internal interface IAudioService
+public interface IAudioService
 {
     Task JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel);
     Task LeaveAudioAsync(IGuild guild);
@@ -13,7 +13,7 @@ internal interface IAudioService
     Task SkipAudioAsync(IGuild guild);
 }
 
-internal sealed class AudioService(
+public sealed class AudioService(
     IAudioStore audioStore,
     IAudioConnector audioConnector,
     IMusicFileHandler musicFileHandler,

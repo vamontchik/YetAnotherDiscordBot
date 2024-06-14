@@ -6,13 +6,13 @@ using Discord.Audio;
 
 namespace DiscordBot.Modules.Audio;
 
-internal interface IPcmStreamHandler
+public interface IPcmStreamHandler
 {
     Task<AudioOutStream?> CreatePcmStreamAsync(IGuild guild, IAudioClient client);
     Task FlushPcmStreamAsync(IGuild guild, Stream pcmStream);
 }
 
-internal sealed class PcmStreamHandler(IAudioStore audioStore, IAudioLogger audioLogger) : IPcmStreamHandler
+public sealed class PcmStreamHandler(IAudioStore audioStore, IAudioLogger audioLogger) : IPcmStreamHandler
 {
     public Task<AudioOutStream?> CreatePcmStreamAsync(IGuild guild, IAudioClient client)
     {

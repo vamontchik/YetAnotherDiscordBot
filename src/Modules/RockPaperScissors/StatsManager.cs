@@ -5,13 +5,13 @@ using System.Threading.Tasks;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
-internal interface IStatsManager
+public interface IStatsManager
 {
     Task UpdateAsync(GameResult gameResult);
     Task<Stat?> GetStatAsync(ulong id);
 }
 
-internal sealed class StatsManager : IStatsManager
+public sealed class StatsManager : IStatsManager
 {
     private readonly ConcurrentDictionary<ulong, Stat> _idToInfo = new();
 

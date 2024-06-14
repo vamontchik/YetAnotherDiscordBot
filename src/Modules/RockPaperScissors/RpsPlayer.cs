@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Modules.RockPaperScissors;
 
-internal sealed class RpsPlayer
+public sealed class RpsPlayer
 {
     public const ulong BotId = 0;
 

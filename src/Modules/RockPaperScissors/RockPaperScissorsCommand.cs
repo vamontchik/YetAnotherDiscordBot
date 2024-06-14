@@ -5,7 +5,7 @@ using Discord.Commands;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
-internal sealed class RockPaperScissorsCommand
+public sealed class RockPaperScissorsCommand
 {
     public required string Argument { get; init; }
     public required IStatsManager StatsManager { get; init; }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
-public sealed class Stat
+internal sealed class Stat
 {
     private readonly Dictionary<RpsType, int> _winsByType = new()
     {

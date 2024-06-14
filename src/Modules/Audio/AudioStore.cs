@@ -8,7 +8,7 @@ using Discord.Audio;
 
 namespace DiscordBot.Modules.Audio;
 
-public interface IAudioStore
+internal interface IAudioStore
 {
     IAudioClient? GetAudioClientForGuild(IGuild guild);
     bool AddAudioClientForGuild(IGuild guild, IAudioClient audioClient);
@@ -24,7 +24,7 @@ public interface IAudioStore
     bool RemovePcmStreamFromGuild(IGuild guild, out AudioOutStream? pcmStream);
 }
 
-public sealed class AudioStore(IAudioLogger audioLogger) : IAudioStore
+internal sealed class AudioStore(IAudioLogger audioLogger) : IAudioStore
 {
     private readonly ConcurrentDictionary<ulong, IAudioClient> _connectedAudioClients = new();
     private readonly ConcurrentDictionary<ulong, Process> _connectedFfmpegProcesses = new();

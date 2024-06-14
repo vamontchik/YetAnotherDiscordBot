@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Modules.RockPaperScissors;
 
-public enum GameResultType
+internal enum GameResultType
 {
     P1,
     P2,

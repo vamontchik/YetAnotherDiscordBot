@@ -23,32 +23,54 @@ internal sealed class AudioService(
     IAudioLogger audioLogger)
     : IAudioService
 {
-    public async Task JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel) =>
+    public async Task JoinAudioAsync(IGuild guild, IVoiceChannel voiceChannel) => 
         await audioConnector.ConnectAsync(guild, voiceChannel).ConfigureAwait(false);
 
     public async Task LeaveAudioAsync(IGuild guild)
     {
-        await audioCleanupOrganizer.FullDisconnectAndCleanup(guild).ConfigureAwait(false);
-        SetToNoSongPlayingStatus(guild);
+        try
+        {
+            await audioCleanupOrganizer.FullDisconnectAndCleanup(guild).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
+        }
+        finally
+        {
+            SetToNoSongPlayingStatus(guild);
+        }
     }
 
     public async Task SendAudioAsync(IGuild guild, string url)
+    {
+        try
+        {
+            await SendAudioAsyncInternal(guild, url).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
+        }
+        finally
+        {
+            SetToNoSongPlayingStatus(guild);
+        }
+    }
+
+    private async Task SendAudioAsyncInternal(IGuild guild, string url)
     {
         if (!CheckAndSetCurrentPlayingSong(guild))
             return;
 
         var audioClient = audioStore.GetAudioClientForGuild(guild);
         if (audioClient is null)
-        {
-            SetToNoSongPlayingStatus(guild);
             return;
-        }
 
         var didMusicDownload = await musicFileHandler.DownloadMusicAsync(guild, url).ConfigureAwait(false);
         if (!didMusicDownload)
         {
             await audioCleanupOrganizer.MusicDownloadFailureCleanup(guild).ConfigureAwait(false);
-            SetToNoSongPlayingStatus(guild);
             return;
         }
 
@@ -56,28 +78,19 @@ internal sealed class AudioService(
         if (!ffmpegHandler.CheckAndStore(guild, result, ffmpegProcess, ffmpegStream))
         {
             await audioCleanupOrganizer.FfmpegSetupFailureCleanup(guild).ConfigureAwait(false);
-            SetToNoSongPlayingStatus(guild);
             return;
         }
 
-        var pcmStream = await pcmStreamHandler.CreatePcmStreamAsync(url, guild, audioClient).ConfigureAwait(false);
+        var pcmStream = await pcmStreamHandler.CreatePcmStreamAsync(guild, audioClient).ConfigureAwait(false);
         if (pcmStream is null)
         {
             await audioCleanupOrganizer.PcmStreamSetupFailureCleanup(guild).ConfigureAwait(false);
-            SetToNoSongPlayingStatus(guild);
             return;
         }
 
         await SendAudioAsync(guild, ffmpegStream!, pcmStream).ConfigureAwait(false);
-        await pcmStreamHandler.FlushPcmStreamAsync(guild, url, pcmStream).ConfigureAwait(false);
+        await pcmStreamHandler.FlushPcmStreamAsync(guild, pcmStream).ConfigureAwait(false);
         await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
-        SetToNoSongPlayingStatus(guild);
-    }
-
-    private enum SongStatus
-    {
-        Playing,
-        Stopped
     }
 
     private bool CheckAndSetCurrentPlayingSong(IGuild guild)
@@ -110,8 +123,24 @@ internal sealed class AudioService(
 
     public async Task SkipAudioAsync(IGuild guild)
     {
-        await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
-        SetToNoSongPlayingStatus(guild);
+        try
+        {
+            await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            audioLogger.LogExceptionWithGuildInfo(guild, e);
+        }
+        finally
+        {
+            SetToNoSongPlayingStatus(guild);
+        }
+    }
+    
+    private enum SongStatus
+    {
+        Playing,
+        Stopped
     }
 
     private bool _isPlaying;

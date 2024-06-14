@@ -60,7 +60,7 @@ public sealed class AudioService(
             return;
         }
 
-        var pcmStream = await pcmStreamHandler.CreatePcmStreamAsync(url, guild, audioClient).ConfigureAwait(false);
+        var pcmStream = await pcmStreamHandler.CreatePcmStreamAsync(guild, audioClient).ConfigureAwait(false);
         if (pcmStream is null)
         {
             await audioCleanupOrganizer.PcmStreamSetupFailureCleanup(guild).ConfigureAwait(false);
@@ -69,7 +69,7 @@ public sealed class AudioService(
         }
 
         await SendAudioAsync(guild, ffmpegStream!, pcmStream).ConfigureAwait(false);
-        await pcmStreamHandler.FlushPcmStreamAsync(guild, url, pcmStream).ConfigureAwait(false);
+        await pcmStreamHandler.FlushPcmStreamAsync(guild, pcmStream).ConfigureAwait(false);
         await audioCleanupOrganizer.PostSongCleanup(guild).ConfigureAwait(false);
         SetToNoSongPlayingStatus(guild);
     }

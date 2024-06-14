@@ -2,7 +2,7 @@
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
-public sealed class GameResult
+internal sealed class GameResult
 {
     public required RpsPlayer P1 { get; init; }
     public required RpsPlayer P2 { get; init; }

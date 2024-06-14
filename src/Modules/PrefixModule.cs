@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot.Modules;
 
-public sealed class PrefixModule(IServiceProvider provider) : ModuleBase<SocketCommandContext>
+internal sealed class PrefixModule(IServiceProvider provider) : ModuleBase<SocketCommandContext>
 {
     private readonly IStatsManager _statsManager = provider.GetRequiredService<IStatsManager>();
     private readonly IAudioService _audioService = provider.GetRequiredService<IAudioService>();

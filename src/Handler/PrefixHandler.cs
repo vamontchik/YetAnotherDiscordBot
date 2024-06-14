@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace DiscordBot.Handler;
 
-public sealed class PrefixHandler(
+internal sealed class PrefixHandler(
     DiscordSocketClient client,
     CommandService commands,
     IConfigurationRoot configuration, // needs to be IConfigurationRoot, not IConfiguration, for yaml reading lib

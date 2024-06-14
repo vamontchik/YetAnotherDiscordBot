@@ -6,14 +6,14 @@ using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-public interface IMusicFileHandler
+internal interface IMusicFileHandler
 {
     Task DeleteMusicAsync(IGuild guild);
     Task<bool> DownloadMusicAsync(IGuild guild, string url);
     Process? CreateFfmpegProcess();
 }
 
-public sealed class MusicFileHandler(IAudioLogger audioLogger) : IMusicFileHandler
+internal sealed class MusicFileHandler(IAudioLogger audioLogger) : IMusicFileHandler
 {
     private const string FileNameWithoutExtension = "music_file";
     private const string FileNameWithExtension = FileNameWithoutExtension + ".wav";

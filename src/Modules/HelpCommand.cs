@@ -5,7 +5,7 @@ using Discord.Commands;
 
 namespace DiscordBot.Modules;
 
-public sealed class HelpCommand(SocketCommandContext context)
+internal sealed class HelpCommand(SocketCommandContext context)
 {
     private readonly IEnumerable<string> _commands =
     [

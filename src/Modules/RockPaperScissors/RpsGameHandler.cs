@@ -6,7 +6,7 @@ using Discord.Commands;
 
 namespace DiscordBot.Modules.RockPaperScissors;
 
-public sealed class RpsGameHandler
+internal sealed class RpsGameHandler
 {
     private readonly Random _random = new();
 

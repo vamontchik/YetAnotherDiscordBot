@@ -3,13 +3,13 @@ using Discord;
 
 namespace DiscordBot.Modules.Audio;
 
-public interface IAudioLogger
+internal interface IAudioLogger
 {
     void LogWithGuildInfo(IGuild guild, string message);
     void LogExceptionWithGuildInfo(IGuild guild, Exception e);
 }
 
-public sealed class AudioLogger : IAudioLogger
+internal sealed class AudioLogger : IAudioLogger
 {
     public void LogExceptionWithGuildInfo(IGuild guild, Exception e) =>
         Console.WriteLine($"[{DateTime.Now}][{guild.Name}:{guild.Id}] {e}");

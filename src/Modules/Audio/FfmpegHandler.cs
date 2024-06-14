@@ -25,7 +25,7 @@ internal sealed class FfmpegHandler(
     IAudioLogger audioLogger)
     : IFfmpegHandler
 {
-    public enum FfmpegCreationResult
+    internal enum FfmpegCreationResult
     {
         Successful,
         Failed

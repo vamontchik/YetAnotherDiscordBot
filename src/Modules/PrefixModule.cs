@@ -8,7 +8,7 @@ using DiscordBot.Modules.RockPaperScissors;
 
 namespace DiscordBot.Modules;
 
-public sealed class PrefixModule(IStatsManager statsManager, IAudioService audioService)
+internal sealed class PrefixModule(IStatsManager statsManager, IAudioService audioService)
     : ModuleBase<SocketCommandContext>
 {
     [Command("ping")]

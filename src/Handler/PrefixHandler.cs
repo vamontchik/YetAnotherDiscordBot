@@ -6,10 +6,10 @@ using Microsoft.Extensions.Configuration;
 
 namespace DiscordBot.Handler;
 
-public sealed class PrefixHandler(
+internal sealed class PrefixHandler(
     DiscordSocketClient client,
     CommandService commands,
-    IConfigurationRoot configuration,
+    IConfiguration configuration,
     IServiceProvider services)
 {
     public void Initialize() => client.MessageReceived += HandleCommandAsync;

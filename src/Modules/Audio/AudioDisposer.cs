@@ -7,7 +7,7 @@ using Discord.Audio;
 
 namespace DiscordBot.Modules.Audio;
 
-public interface IAudioDisposer
+internal interface IAudioDisposer
 {
     Task CleanupFfmpegProcessAsync(IGuild guild);
     Task CleanupFfmpegStreamAsync(IGuild guild);
@@ -15,7 +15,7 @@ public interface IAudioDisposer
     Task CleanupAudioClientAsync(IGuild guild);
 }
 
-public sealed class AudioDisposer(IAudioStore audioStore, IAudioLogger audioLogger) : IAudioDisposer
+internal sealed class AudioDisposer(IAudioStore audioStore, IAudioLogger audioLogger) : IAudioDisposer
 {
     #region CleanupFfmpegProcessAsync
 

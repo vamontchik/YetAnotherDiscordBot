@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Modules.RockPaperScissors;
 
-public enum RpsType
+internal enum RpsType
 {
     Rock,
     Paper,

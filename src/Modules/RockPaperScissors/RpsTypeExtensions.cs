@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Modules.RockPaperScissors;
 
-public static class RpsTypeExtensions
+internal static class RpsTypeExtensions
 {
     public static int Compare(this RpsType ours, RpsType theirs)
     {

@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Modules.RockPaperScissors;
 
-public enum StatResultType
+internal enum StatResultType
 {
     Win,
     Loss,

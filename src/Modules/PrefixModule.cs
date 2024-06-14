@@ -5,12 +5,15 @@ using Discord;
 using Discord.Commands;
 using DiscordBot.Modules.Audio;
 using DiscordBot.Modules.RockPaperScissors;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot.Modules;
 
-internal sealed class PrefixModule(IStatsManager statsManager, IAudioService audioService)
-    : ModuleBase<SocketCommandContext>
+internal sealed class PrefixModule(IServiceProvider provider) : ModuleBase<SocketCommandContext>
 {
+    private readonly IStatsManager _statsManager = provider.GetRequiredService<IStatsManager>();
+    private readonly IAudioService _audioService = provider.GetRequiredService<IAudioService>();
+    
     [Command("ping")]
     public async Task HandlePingCommand()
     {
@@ -45,7 +48,7 @@ internal sealed class PrefixModule(IStatsManager statsManager, IAudioService aud
         {
             Argument = argument,
             SocketCommandContext = Context,
-            StatsManager = statsManager
+            StatsManager = _statsManager
         };
         await rpsCommand.ExecuteAsync().ConfigureAwait(false);
     }
@@ -63,14 +66,14 @@ internal sealed class PrefixModule(IStatsManager statsManager, IAudioService aud
         }
 
         LogMessageWithContext("Join command");
-        await audioService.JoinAudioAsync(Context.Guild, voiceChannel).ConfigureAwait(false);
+        await _audioService.JoinAudioAsync(Context.Guild, voiceChannel).ConfigureAwait(false);
     }
 
     [Command("leave")]
     public async Task HandleLeaveCommand()
     {
         LogMessageWithContext("Leave command");
-        await audioService.LeaveAudioAsync(Context.Guild).ConfigureAwait(false);
+        await _audioService.LeaveAudioAsync(Context.Guild).ConfigureAwait(false);
     }
 
     [Command("play")]
@@ -95,14 +98,14 @@ internal sealed class PrefixModule(IStatsManager statsManager, IAudioService aud
         }
 
         LogMessageWithContext("Play command");
-        await audioService.SendAudioAsync(Context.Guild, url).ConfigureAwait(false);
+        await _audioService.SendAudioAsync(Context.Guild, url).ConfigureAwait(false);
     }
 
     [Command("skip")]
     public async Task HandleSkipCommand()
     {
         LogMessageWithContext("Skip command");
-        await audioService.SkipAudioAsync(Context.Guild).ConfigureAwait(false);
+        await _audioService.SkipAudioAsync(Context.Guild).ConfigureAwait(false);
     }
 
     [Command("help")]
